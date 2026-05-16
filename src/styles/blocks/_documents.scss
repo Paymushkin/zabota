@@ -1,0 +1,71 @@
+@use '../mixins' as *;
+
+.documents {
+  margin-bottom: var(--section-gap);
+}
+
+.documents__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.documents__title {
+  margin: 0 0 20px;
+  @include heading-section;
+}
+
+.documents__text {
+  margin: 0 0 40px;
+  @include text-body-lg;
+}
+
+.documents__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 40px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  .btn-pill {
+    box-shadow: none;
+
+    @media (hover: hover) {
+      &:hover {
+        box-shadow: var(--shadow-btn-hover);
+      }
+    }
+  }
+}
+
+@include bp-tablet {
+  .documents__title {
+    font-size: clamp(32px, 4.5vw, var(--font-size-section-title));
+  }
+}
+
+@include bp-mobile {
+  .documents__title {
+    font-size: 28px;
+    letter-spacing: -0.28px;
+  }
+
+  .documents__text {
+    font-size: 18px;
+    letter-spacing: 0.36px;
+  }
+
+  .documents__actions {
+    flex-direction: column;
+    width: 100%;
+    max-width: 360px;
+
+    .btn-pill {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+}

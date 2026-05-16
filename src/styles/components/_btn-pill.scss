@@ -1,0 +1,43 @@
+@use '../interactive' as *;
+
+@mixin btn-pill($bg, $bg-hover, $color: #fff) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 280px;
+  padding: 20px 48px;
+  font-family: var(--font-heading);
+  font-size: var(--font-size-btn);
+  font-weight: 400;
+  line-height: 1.1;
+  color: $color;
+  text-decoration: none;
+  background: $bg;
+  border: none;
+  border-radius: 100px;
+  cursor: pointer;
+  transition:
+    background-color var(--duration-interactive) var(--ease-interactive),
+    transform var(--duration-interactive) var(--ease-interactive);
+
+  @include hover-only {
+    &:hover {
+      color: $color;
+      background: $bg-hover;
+    }
+  }
+
+  @include focus-ring(4px, 100px);
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.btn-pill {
+  @include btn-pill(var(--color-bg-darker), var(--color-text));
+}
+
+.btn-pill_accent {
+  @include btn-pill(var(--color-badge), #e63a10);
+}

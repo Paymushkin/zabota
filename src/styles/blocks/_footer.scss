@@ -1,0 +1,77 @@
+@use '../interactive' as *;
+@use '../mixins' as *;
+
+.footer {
+  width: 100%;
+  margin-top: 50px;
+  padding: 56px 0 72px;
+  background: #000;
+  color: #999;
+}
+
+.footer__container {
+  max-width: var(--container-max);
+}
+
+.footer__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px 64px;
+}
+
+.footer__col {
+  min-width: 0;
+}
+
+.footer__copyright {
+  margin: 0 0 20px;
+  font-family: var(--font-text);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #999;
+}
+
+.footer__text {
+  margin: 0 0 16px;
+  font-family: var(--font-text);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #999;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.footer__text a {
+  color: #999;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: color var(--duration-interactive) var(--ease-interactive);
+
+  @include hover-only {
+    &:hover {
+      color: #ccc;
+    }
+  }
+
+  @include focus-ring(2px, 2px);
+}
+
+@include bp-tablet {
+  .footer__grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .footer {
+    padding: 48px 0 56px;
+  }
+}
+
+@include bp-mobile {
+  .footer__container {
+    padding-inline: var(--page-gutter);
+  }
+}

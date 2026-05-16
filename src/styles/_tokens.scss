@@ -1,0 +1,37 @@
+:root {
+  --color-bg-darker: #111013;
+  --color-bg-card: #f6f1f1;
+  --color-bg-page: #fff;
+  --color-text: #433c48;
+  --color-text-light: #f6f1f1;
+  --color-text-hover: #2a2530;
+  --color-link: #018ad2;
+  --color-link-on-light: #0168a8;
+  --color-link-hover: #f00;
+  --color-focus: #7f5dd8;
+  --color-badge: #ff4112;
+
+  --radius-card: 32px;
+  --page-max: 1440px;
+  --container-max: 1376px;
+  --page-gutter: 32px;
+  --section-gap: 115px;
+  --section-padding: 100px;
+
+  --font-size-section-title: 46px;
+  --line-height-section-title: 1.08;
+  --letter-spacing-section-title: -0.46px;
+  --font-size-body-lg: 22px;
+  --font-size-btn: 32px;
+
+  --shadow-steps-hover: 2px 10px 22px rgb(67 60 72 / 10%);
+  --shadow-btn-hover: 0 8px 24px rgb(67 60 72 / 18%);
+  --duration-interactive: 0.2s;
+  --ease-interactive: ease;
+
+  --font-text: 'YS Text', system-ui, -apple-system, sans-serif;
+  --font-heading: 'YS Geo', 'YS Text', system-ui, sans-serif;
+
+  --bp-tablet: 979px;
+  --bp-mobile: 768px;
+}

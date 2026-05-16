@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+
+# Исходные ассеты (генерируются в public/ через npm run optimize-images)
+/img/
+/fonts/
+/old/
+
+# Сгенерированные ассеты
+public/img/*.webp
+public/img/*.png
+public/fonts/
+
+# Prerender (создаётся npm run prerender)
+src/sections/generated/
+
+# Отчёты и референсы
+lighthouse-*.json
+lh-*.json
+figma.pdf
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Env
+.env
+.env.*

@@ -1,0 +1,19 @@
+@mixin focus-ring($offset: 2px, $radius: 4px) {
+  &:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: $offset;
+    border-radius: $radius;
+  }
+}
+
+@mixin hover-only {
+  @media (hover: hover) {
+    @content;
+  }
+}
+
+@mixin press-scale {
+  &:active {
+    transform: scale(0.98);
+  }
+}
