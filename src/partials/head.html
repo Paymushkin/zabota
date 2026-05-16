@@ -47,4 +47,9 @@
       .hero__inner{padding:100px}
       .hero__title{margin:0 0 20px;font-family:var(--font-heading);font-weight:500;font-size:64px;line-height:1.1;color:#f6f1f1}
       .hero__text{font-family:var(--font-text);font-size:22px;line-height:1.3;color:rgba(246,241,241,.88)}
+      .viewport-stub{display:none;flex:1;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px;background:#fff}
+      .viewport-stub__inner{display:flex;flex-direction:column;align-items:center;gap:24px;max-width:420px;text-align:center}
+      .viewport-stub__title{margin:0;font-family:var(--font-heading);font-weight:500;font-size:28px;line-height:1.15;color:#433c48}
+      .viewport-stub__text{margin:0;font-family:var(--font-text);font-size:16px;line-height:1.4;color:#433c48}
+      @media (max-width:979px){.viewport-stub{display:flex}.page,.footer,.skip-link{display:none!important}}
     </style>
