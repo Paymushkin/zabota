@@ -2,8 +2,8 @@
 
 .hero {
   position: relative;
-  width: min(var(--container-max), calc(100% - 2 * var(--page-gutter)));
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   border-radius: var(--radius-card);
   overflow: hidden;
   background-color: var(--color-bg-darker);
