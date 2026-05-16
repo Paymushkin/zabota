@@ -10,6 +10,7 @@
     "dev:fresh": "npm run optimize-images && npm run prerender && vite --open",
     "prebuild": "npm run optimize-images && npm run prerender",
     "build": "vite build",
+    "build:pages": "npm run prerender && vite build",
     "preview": "vite preview",
     "lighthouse": "lighthouse http://localhost:4173 --only-categories=performance,accessibility,best-practices,seo --quiet"
   },

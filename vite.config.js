@@ -37,6 +37,7 @@ function htmlIncludes() {
 }
 
 export default defineConfig({
+  base: process.env.BASE_PATH || '/',
   plugins: [htmlIncludes()],
   publicDir: 'public',
   build: {

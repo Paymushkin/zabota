@@ -9,10 +9,8 @@ dist/
 /fonts/
 /old/
 
-# Сгенерированные ассеты
-public/img/*.webp
+# Сгенерированные ассеты (промежуточные PNG в public не коммитим)
 public/img/*.png
-public/fonts/
 
 # Prerender (создаётся npm run prerender)
 src/sections/generated/
