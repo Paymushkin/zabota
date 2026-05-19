@@ -1,4 +1,5 @@
-const SPRITE_URL = '/redis.webp';
+/** Публичный ассет с учётом base (GitHub Pages: /zabota/). */
+const SPRITE_URL = `${import.meta.env.BASE_URL}redis.webp`;
 const SPRITE_GRID = 10;
 const SPRITE_FRAMES = 100;
 const SPRITE_MAX_PX = 160;
