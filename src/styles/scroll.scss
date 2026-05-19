@@ -1,0 +1,88 @@
+@use 'reset';
+@use 'tokens';
+@use 'fonts';
+@use 'mixins';
+@use 'base';
+@use 'components/btn-pill';
+@use 'blocks/scroll-hero';
+@use 'blocks/steps';
+@use 'blocks/documents';
+@use 'blocks/faq';
+@use 'blocks/footer';
+@use 'blocks/viewport-stub';
+
+:root {
+  --page-max: 1920px;
+  --container-max: 1920px;
+}
+
+body {
+  background: var(--color-bg-darker);
+}
+
+.page {
+  background: var(--color-bg-darker);
+}
+
+.footer {
+  background: var(--color-bg-darker);
+}
+
+.scroll-pin + .steps {
+  margin-top: var(--section-gap);
+}
+
+/* Документы только на scroll.html (есть .scroll-pin): тёмный фон страницы, светлый текст, градиентные кнопки. */
+.page__main:has(.scroll-pin) .documents {
+  background: transparent;
+  padding-block: var(--section-gap);
+}
+
+.page__main:has(.scroll-pin) .documents__title {
+  color: var(--color-text-light);
+}
+
+.page__main:has(.scroll-pin) .documents__text {
+  color: rgb(246 241 241 / 92%);
+}
+
+.page__main:has(.scroll-pin) .documents__actions .btn-pill {
+  color: #fff;
+  text-decoration: none;
+
+  &:visited,
+  &:hover,
+  &:active,
+  &:focus {
+    text-decoration: none;
+  }
+
+  box-shadow: none;
+  transition:
+    filter var(--duration-interactive) var(--ease-interactive),
+    transform var(--duration-interactive) var(--ease-interactive);
+
+  @media (hover: hover) {
+    &:hover {
+      color: #fff;
+      filter: brightness(1.08);
+      box-shadow: 0 8px 28px rgb(0 0 0 / 35%);
+    }
+  }
+}
+
+.page__main:has(.scroll-pin) .documents__actions li:first-child .btn-pill {
+  background: linear-gradient(90deg, #ff252b 0%, #fff200 100%);
+}
+
+.page__main:has(.scroll-pin) .documents__actions li:first-child .btn-pill:hover {
+  background: linear-gradient(90deg, #ff252b 0%, #fff200 100%);
+}
+
+.page__main:has(.scroll-pin) .documents__actions li:nth-child(2) .btn-pill {
+  background: linear-gradient(90deg, #fff200 0%, #ff2d8d 100%);
+}
+
+.page__main:has(.scroll-pin) .documents__actions li:nth-child(2) .btn-pill:hover {
+  background: linear-gradient(90deg, #fff200 0%, #ff2d8d 100%);
+}

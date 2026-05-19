@@ -1,0 +1,36 @@
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Яндекс Забота — демо горизонтального hero</title>
+    <meta
+      name="description"
+      content="Демо-страница: горизонтальная прокрутка hero при вертикальном скролле, затем обычные секции."
+    />
+    <link rel="canonical" href="https://care.yandex.ru/scroll.html" />
+    <meta property="og:url" content="https://care.yandex.ru/scroll.html" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Яндекс Забота — демо горизонтального hero" />
+    <meta
+      property="og:description"
+      content="Демо-страница: горизонтальная прокрутка hero при вертикальном скролле."
+    />
+    <meta property="og:site_name" content="Яндекс Забота" />
+    <meta property="og:locale" content="ru_RU" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <link rel="icon" href="/img/logo.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://mc.yandex.ru" crossorigin />
+    <link rel="preload" href="/fonts/text-regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/text-geo-medium.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/redis.webp" as="image" type="image/webp" />
+    <style>
+      :root{--color-bg-page:#fff;--color-bg-darker:#111013;--color-text-light:#f6f1f1;--page-max:1920px;--container-max:1920px;--page-gutter:32px;--font-text:'YS Text',system-ui,sans-serif;--font-heading:'YS Geo','YS Text',system-ui,sans-serif}
+      *,*::before,*::after{box-sizing:border-box}
+      body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:var(--font-text);background:var(--color-bg-darker);-webkit-font-smoothing:antialiased}
+      .page{flex:1;display:flex;flex-direction:column;width:100%;max-width:var(--page-max);margin-inline:auto;background:var(--color-bg-darker)}
+      .container{width:100%;max-width:var(--container-max);margin-inline:auto}
+      .viewport-stub{display:none;flex:1;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px;background:#fff}
+      .viewport-stub__inner{display:flex;flex-direction:column;align-items:center;gap:24px;max-width:420px;text-align:center}
+      .viewport-stub__title{margin:0;font-family:var(--font-heading);font-weight:500;font-size:28px;line-height:1.15;color:#433c48}
+      .viewport-stub__text{margin:0;font-family:var(--font-text);font-size:16px;line-height:1.4;color:#433c48}
+      @media (max-width:979px){.viewport-stub{display:flex}.page,.footer,.skip-link{display:none!important}}
+    </style>
