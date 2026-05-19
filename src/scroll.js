@@ -2,7 +2,7 @@ import './styles/scroll.scss';
 import { initScrollHero } from './modules/scroll-hero.js';
 import { initLinks } from './modules/links.js';
 import { initFaq } from './modules/faq.js';
-import { initSteps } from './modules/steps.js';
+import { initScrollSteps } from './modules/scroll-steps.js';
 import { initTypography } from './modules/typography.js';
 import { initViewportMode, isDesktopViewport } from './utils/viewport.js';
 
@@ -20,7 +20,7 @@ function init() {
 
   initLinks();
   initFaq();
-  initSteps();
+  initScrollSteps();
   initTypography();
   scheduleMetrika();
 }

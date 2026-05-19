@@ -1,0 +1,136 @@
+@use '../mixins' as *;
+
+.scroll-steps {
+  margin-bottom: 0;
+}
+
+.scroll-steps__pin {
+  height: 300vh;
+}
+
+.scroll-steps__sticky {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  height: 100vh;
+  padding: clamp(32px, 4vw, 64px) var(--page-gutter) clamp(24px, 3vw, 48px);
+  overflow: visible;
+}
+
+.scroll-steps__title {
+  flex-shrink: 0;
+  max-width: 1200px;
+  margin: 0 0 clamp(32px, 4vw, 56px);
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: clamp(32px, 4.2vw, var(--font-size-section-title));
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--color-text-light);
+  text-align: center;
+  text-wrap: balance;
+}
+
+.scroll-steps__deck {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  max-width: 1200px;
+  min-height: 0;
+  /* Ушедшие вниз карточки не торчат под колодой и не дают лишний «хвост» перед FAQ */
+  overflow: hidden;
+}
+
+.scroll-steps__card {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 1200px;
+  padding: clamp(32px, 4vw, 56px) clamp(24px, 3vw, 48px) clamp(24px, 3vw, 40px);
+  background: #f5f3f4;
+  border-radius: 48px;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 28%);
+  transform-origin: center bottom;
+  will-change: transform;
+}
+
+.scroll-steps__card-header {
+  margin: 0 0 clamp(20px, 2.5vw, 32px);
+  text-align: center;
+}
+
+.scroll-steps__badge {
+  margin: 0 0 12px;
+  font-family: var(--font-heading);
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 500;
+  line-height: 1.2;
+  color: #ff252b;
+}
+
+.scroll-steps__card-title {
+  margin: 0 0 12px;
+  font-family: var(--font-heading);
+  font-weight: 500;
+  font-size: clamp(28px, 3.5vw, 40px);
+  line-height: 1.15;
+  color: var(--color-text);
+  text-wrap: balance;
+}
+
+.scroll-steps__card-note {
+  margin: 0;
+  max-width: 42em;
+  margin-inline: auto;
+  font-family: var(--font-text);
+  font-size: clamp(16px, 1.8vw, 20px);
+  line-height: 1.4;
+  color: rgb(67 60 72 / 78%);
+  text-wrap: pretty;
+}
+
+.scroll-steps__card-media {
+  display: flex;
+  justify-content: center;
+}
+
+.scroll-steps__card-image {
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+  border-radius: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-steps__pin {
+    height: auto;
+  }
+
+  .scroll-steps__sticky {
+    position: static;
+    height: auto;
+    min-height: 0;
+  }
+
+  .scroll-steps__deck {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    flex: none;
+    min-height: 0;
+  }
+
+  .scroll-steps__card {
+    position: relative !important;
+    left: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+}

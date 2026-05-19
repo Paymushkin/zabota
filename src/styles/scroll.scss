@@ -5,7 +5,7 @@
 @use 'base';
 @use 'components/btn-pill';
 @use 'blocks/scroll-hero';
-@use 'blocks/steps';
+@use 'blocks/scroll-steps';
 @use 'blocks/documents';
 @use 'blocks/faq';
 @use 'blocks/footer';
@@ -28,7 +28,11 @@ body {
   background: var(--color-bg-darker);
 }
 
-.scroll-pin + .steps {
+.scroll-pin + .scroll-steps {
+  margin-top: var(--section-gap);
+}
+
+.page__main:has(.scroll-pin) .scroll-steps + .faq {
   margin-top: var(--section-gap);
 }
 
