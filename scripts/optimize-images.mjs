@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readdir, stat, unlink } from 'node:fs/promises';
+import { access, copyFile, mkdir, readdir, stat, unlink } from 'node:fs/promises';
 import { join, parse } from 'node:path';
 import sharp from 'sharp';
 
@@ -26,13 +26,31 @@ const PUBLIC_VARIANTS = {
 
 const HERO_WEBP = { quality: 82, effort: 4 };
 
+async function pathExists(filePath) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function copyFonts() {
+  const srcFontsDir = join(ROOT, 'fonts');
+  if (!(await pathExists(srcFontsDir))) {
+    if (await pathExists(FONTS_OUT)) {
+      console.log('  fonts: using committed public/fonts');
+      return;
+    }
+    throw new Error('Fonts missing: add /fonts locally or commit public/fonts');
+  }
+
   await mkdir(FONTS_OUT, { recursive: true });
-  const fonts = await readdir(join(ROOT, 'fonts'));
+  const fonts = await readdir(srcFontsDir);
   await Promise.all(
     fonts
       .filter((f) => f.endsWith('.woff2'))
-      .map((f) => copyFile(join(ROOT, 'fonts', f), join(FONTS_OUT, f))),
+      .map((f) => copyFile(join(srcFontsDir, f), join(FONTS_OUT, f))),
   );
 }
 
@@ -81,14 +99,20 @@ async function convertPublicPng(file, opts) {
 
 async function optimizeStatic() {
   await mkdir(OUT_DIR, { recursive: true });
-  await copyFile(join(SRC_DIR, 'logo.svg'), join(OUT_DIR, 'logo.svg'));
 
-  const srcFiles = await readdir(SRC_DIR);
-  for (const file of srcFiles) {
-    if (!file.endsWith('.png')) continue;
-    const opts = SRC_VARIANTS[file];
-    if (!opts) continue;
-    await convertNamedPng(file, opts);
+  if (await pathExists(SRC_DIR)) {
+    const logoSrc = join(SRC_DIR, 'logo.svg');
+    if (await pathExists(logoSrc)) {
+      await copyFile(logoSrc, join(OUT_DIR, 'logo.svg'));
+    }
+
+    const srcFiles = await readdir(SRC_DIR);
+    for (const file of srcFiles) {
+      if (!file.endsWith('.png')) continue;
+      const opts = SRC_VARIANTS[file];
+      if (!opts) continue;
+      await convertNamedPng(file, opts);
+    }
   }
 
   for (const [file, opts] of Object.entries(PUBLIC_VARIANTS)) {
