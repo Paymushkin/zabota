@@ -15,6 +15,9 @@ public/img/*.png
 # Hero: только webp в репозитории
 public/hero/**/*.jpg
 
+# Исходник видео (в репо — только сжатый public/video/tv-video.mp4)
+old/video/
+
 # Prerender (создаётся npm run prerender)
 src/sections/generated/
 

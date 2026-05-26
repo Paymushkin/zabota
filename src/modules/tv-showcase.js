@@ -67,16 +67,13 @@ function isVideoReadyToShow(video) {
 /**
  * @param {HTMLVideoElement} video
  * @param {boolean} shouldPlay
- * @param {() => void} bindVideoSource
  */
-function syncVideoPlayback(video, shouldPlay, bindVideoSource) {
+function syncVideoPlayback(video, shouldPlay) {
   if (!shouldPlay) {
     video.pause();
     video.currentTime = 0;
     return;
   }
-
-  bindVideoSource();
 
   if (video.ended) {
     parkVideoOnLastFrame(video);
@@ -101,22 +98,34 @@ function syncVideoPlayback(video, shouldPlay, bindVideoSource) {
 /**
  * @param {HTMLVideoElement} video
  */
-function bindVideoSource(video) {
+function ensureVideoSource(video) {
   const src = TV_SHOWCASE_VIDEO_SRC;
   const source = video.querySelector('source');
 
-  if (source) {
-    if (source.getAttribute('src') !== src) {
-      source.src = src;
-      video.load();
-    }
-    return;
+  if (source && source.getAttribute('src') !== src) {
+    source.src = src;
   }
 
-  if (video.getAttribute('src') !== src) {
+  if (!video.getAttribute('src') && !source?.getAttribute('src')) {
     video.src = src;
-    video.load();
   }
+}
+
+/**
+ * @param {HTMLVideoElement} video
+ */
+function createVideoPrefetch(video) {
+  let started = false;
+
+  return () => {
+    if (started) {
+      return;
+    }
+    started = true;
+    ensureVideoSource(video);
+    video.preload = 'auto';
+    video.load();
+  };
 }
 
 /**
@@ -137,9 +146,9 @@ function setLayerOpacity(element, opacity) {
  * @param {HTMLElement} videoWrap
  * @param {HTMLVideoElement} video
  * @param {number} progress
- * @param {() => void} bindVideoSource
+ * @param {() => void} prefetchVideo
  */
-function applyTvShowcaseFrame(stage, media, img1, img2, videoWrap, video, progress, bindVideoSource) {
+function applyTvShowcaseFrame(stage, media, img1, img2, videoWrap, video, progress, prefetchVideo) {
   const {
     crossfadeStart,
     crossfadeEnd,
@@ -158,7 +167,7 @@ function applyTvShowcaseFrame(stage, media, img1, img2, videoWrap, video, progre
   stage.style.transform = `translate3d(${translateX}px, -50%, 0) scale(${scale})`;
 
   if (progress >= videoPrefetchStart) {
-    bindVideoSource();
+    prefetchVideo();
   }
 
   const wantsVideo = progress >= videoStart;
@@ -168,12 +177,12 @@ function applyTvShowcaseFrame(stage, media, img1, img2, videoWrap, video, progre
     setLayerOpacity(img1, 0);
     setLayerOpacity(img2, 0);
     setLayerOpacity(videoWrap, 1);
-    syncVideoPlayback(video, true, bindVideoSource);
+    syncVideoPlayback(video, true);
     return;
   }
 
   setLayerOpacity(videoWrap, 0);
-  syncVideoPlayback(video, false, bindVideoSource);
+  syncVideoPlayback(video, false);
 
   if (wantsVideo) {
     setLayerOpacity(img1, 0);
@@ -208,13 +217,9 @@ export function initTvShowcase() {
 
   hydrateLazyImages(stage);
   video.playbackRate = TV_SHOWCASE_VIDEO_PLAYBACK_RATE;
-  video.preload = 'auto';
+  ensureVideoSource(video);
 
-  const bindVideoSourceOnce = () => {
-    bindVideoSource(video);
-  };
-
-  bindVideoSourceOnce();
+  const prefetchVideo = createVideoPrefetch(video);
 
   const syncLayout = () => {
     pin.style.height = `${TV_SHOWCASE_PIN_VIEWPORT * window.innerHeight}px`;
@@ -224,8 +229,8 @@ export function initTvShowcase() {
   video.addEventListener('ended', () => parkVideoOnLastFrame(video));
 
   const applyFinalFrame = () => {
-    bindVideoSourceOnce();
-    applyTvShowcaseFrame(stage, media, img1, img2, videoWrap, video, 1, bindVideoSourceOnce);
+    prefetchVideo();
+    applyTvShowcaseFrame(stage, media, img1, img2, videoWrap, video, 1, prefetchVideo);
   };
 
   const { schedule, attach, detach } = createRafScrollLoop(() => {
@@ -245,7 +250,7 @@ export function initTvShowcase() {
       videoWrap,
       video,
       getPinScrollProgress(pin),
-      bindVideoSourceOnce,
+      prefetchVideo,
     );
   });
 
