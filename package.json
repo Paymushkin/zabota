@@ -5,10 +5,11 @@
   "type": "module",
   "scripts": {
     "optimize-images": "node scripts/optimize-images.mjs",
+    "build-hero-sprites": "node scripts/build-hero-sprites.mjs",
     "prerender": "node scripts/prerender-sections.mjs",
     "dev": "vite --open",
     "dev:fresh": "npm run optimize-images && npm run prerender && vite --open",
-    "prebuild": "npm run optimize-images && npm run prerender",
+    "prebuild": "npm run optimize-images && npm run build-hero-sprites && npm run prerender",
     "build": "vite build",
     "build:pages": "npm run prerender && vite build",
     "preview": "vite preview",

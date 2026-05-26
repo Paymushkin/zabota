@@ -23,33 +23,26 @@ export const HERO_BALL_FADE_IN = 0.12;
 export const HERO_INTRO_TEXT_DELAY_MS = 500;
 export const HERO_INTRO_TEXT_FADE_MS = 650;
 
+/** @typedef {{ path: string; count: number }} HeroSequenceSpec */
+
+/** @type {Record<'loop1' | 'transfer12' | 'loop2' | 'transfer23', HeroSequenceSpec>} */
 export const HERO_SEQUENCES = {
   loop1: {
     path: 'hero/hero-1',
-    prefix: 'hero-1-',
     count: 118,
   },
   transfer12: {
     path: 'hero/transfer-1-2',
-    prefix: 'transfer-1-2-',
     count: 60,
   },
   loop2: {
     path: 'hero/hero-2',
-    prefix: 'hero-2-',
     count: 120,
   },
   transfer23: {
     path: 'hero/transfer-2-3',
-    prefix: 'transfer-2-3-',
     count: 120,
   },
 };
 
 export const HERO_LOOP_FPS = 24;
-
-/** Кадры loop1 для первой секунды анимации (~24 fps). */
-export const HERO_LOOP1_BOOTSTRAP_END = 24;
-
-/** Макс. параллельных загрузок изображений (hero + фон). */
-export const HERO_MEDIA_MAX_CONCURRENT = 3;

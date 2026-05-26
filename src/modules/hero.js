@@ -8,22 +8,13 @@ import {
   HERO_INTRO_TEXT_FADE_MS,
   HERO_TEXT_FADE_IN,
   HERO_TEXT_FADE_OUT,
-  HERO_LOOP1_BOOTSTRAP_END,
-  HERO_MEDIA_MAX_CONCURRENT,
 } from '../data/hero.js';
-import {
-  loadImage,
-  loadSequenceBatched,
-  runWhenIdle,
-  setMediaLoadConcurrency,
-} from '../utils/media-loader.js';
+import { loadImage } from '../utils/media-loader.js';
 import { clamp, easeInOut } from '../utils/math.js';
 import { isPinPast } from '../utils/scroll-pin.js';
 
-const DEFERRED_CONCURRENCY = 2;
-
 /** @type {readonly (keyof typeof HERO_SEQUENCES)[]} */
-const DEFERRED_SEQUENCE_KEYS = ['transfer12', 'loop2', 'transfer23'];
+const DEFERRED_SHEET_KEYS = ['transfer12', 'loop2', 'transfer23'];
 
 const SCROLL_PREFETCH = {
   transfer12: 0.14,
@@ -31,14 +22,16 @@ const SCROLL_PREFETCH = {
   transfer23: 0.48,
 };
 
-const LOOP1_IDLE_DELAY_MS = 3500;
+/**
+ * @typedef {{ cols: number; rows: number; frameWidth: number; frameHeight: number; count: number }} SpriteMeta
+ * @typedef {{ image: HTMLImageElement; meta: SpriteMeta }} HeroSheet
+ */
 
 /**
- * @param {{ path: string; prefix: string; count: number }} spec
- * @param {number} index
+ * @param {{ path: string }} spec
  */
-function frameUrl(spec, index) {
-  return `${import.meta.env.BASE_URL}${spec.path}/${spec.prefix}${index}.webp`;
+function sheetBaseUrl(spec) {
+  return `${import.meta.env.BASE_URL}${spec.path}`;
 }
 
 /**
@@ -150,10 +143,10 @@ export function initHero() {
     return;
   }
 
-  /** @type {Record<string, HTMLImageElement[]>} */
-  const frames = {};
-  /** @type {Partial<Record<keyof typeof HERO_SEQUENCES, Promise<HTMLImageElement[]>>>} */
-  const sequenceLoads = {};
+  /** @type {Partial<Record<keyof typeof HERO_SEQUENCES, HeroSheet>>} */
+  const sheets = {};
+  /** @type {Partial<Record<keyof typeof HERO_SEQUENCES, Promise<HeroSheet>>>} */
+  const sheetLoads = {};
   let loop1Index = 0;
   let loop2Index = 0;
   let lastLoopTime = 0;
@@ -164,8 +157,6 @@ export function initHero() {
   let introOpacity = 0;
   let introTimer = null;
   let introRafId = 0;
-  let loop1BootstrapStarted = false;
-  let loop1CompleteStarted = false;
 
   const syncPinHeight = () => {
     pin.style.height = `${window.innerHeight * HERO_PIN_VIEWPORT}px`;
@@ -188,53 +179,60 @@ export function initHero() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   };
 
-  const drawFrame = (img) => {
-    if (!img?.complete) {
+  /**
+   * @param {HeroSheet} sheet
+   * @param {number} frameIndex
+   */
+  const drawSpriteFrame = (sheet, frameIndex) => {
+    const { image, meta } = sheet;
+    if (!image?.complete) {
       return;
     }
+
+    const idx = clamp(frameIndex, 0, meta.count - 1);
+    const col = idx % meta.cols;
+    const row = Math.floor(idx / meta.cols);
+    const sx = col * meta.frameWidth;
+    const sy = row * meta.frameHeight;
+
     syncCanvasSize();
     const { width, height } = canvas;
-    const scale = Math.max(width / img.naturalWidth, height / img.naturalHeight);
-    const dw = img.naturalWidth * scale;
-    const dh = img.naturalHeight * scale;
+    const scale = Math.max(width / meta.frameWidth, height / meta.frameHeight);
+    const dw = meta.frameWidth * scale;
+    const dh = meta.frameHeight * scale;
     const dx = (width - dw) / 2;
     const dy = (height - dh) / 2;
+
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, width, height);
-    ctx.drawImage(img, dx, dy, dw, dh);
+    ctx.drawImage(image, sx, sy, meta.frameWidth, meta.frameHeight, dx, dy, dw, dh);
   };
 
-  const lastLoadedFrame = (key) => {
-    const seq = frames[key];
-    return seq?.[seq.length - 1] ?? null;
+  /**
+   * @param {'loop1' | 'loop2'} mode
+   */
+  const pickLoopFrameIndex = (mode) => {
+    const key = mode;
+    const sheet = sheets[key];
+    if (!sheet) {
+      return 0;
+    }
+    if (mode === 'loop1') {
+      return loop1Index % sheet.meta.count;
+    }
+    return loop2Index % sheet.meta.count;
   };
 
   /**
    * @param {'transfer12' | 'transfer23'} key
    * @param {number} healT
    */
-  const pickTransferFrame = (key, healT) => {
-    const seq = frames[key];
-    if (!seq?.length) {
-      return null;
+  const pickTransferFrameIndex = (key, healT) => {
+    const sheet = sheets[key];
+    if (!sheet) {
+      return 0;
     }
-    const idx = clamp(Math.round(healT * (seq.length - 1)), 0, seq.length - 1);
-    return seq[idx];
-  };
-
-  const pickLoopFrame = (mode) => {
-    if (mode === 'loop1') {
-      const seq = frames.loop1;
-      if (!seq?.length) {
-        return null;
-      }
-      return seq[loop1Index % seq.length];
-    }
-    const seq = frames.loop2;
-    if (!seq?.length) {
-      return lastLoadedFrame('loop1');
-    }
-    return seq[loop2Index % seq.length];
+    return clamp(Math.round(healT * (sheet.meta.count - 1)), 0, sheet.meta.count - 1);
   };
 
   const applyTextOpacity = () => {
@@ -280,18 +278,21 @@ export function initHero() {
     }
 
     if (state.mode === 'transfer12' || state.mode === 'transfer23') {
-      const img =
-        pickTransferFrame(state.mode, state.healT) ??
-        (state.mode === 'transfer12' ? lastLoadedFrame('loop1') : lastLoadedFrame('loop2'));
-      if (img) {
-        drawFrame(img);
+      const sheet = sheets[state.mode];
+      if (sheet) {
+        drawSpriteFrame(sheet, pickTransferFrameIndex(state.mode, state.healT));
+        return;
+      }
+      const fallback = state.mode === 'transfer12' ? sheets.loop1 : sheets.loop2;
+      if (fallback) {
+        drawSpriteFrame(fallback, pickLoopFrameIndex(state.mode === 'transfer12' ? 'loop1' : 'loop2'));
       }
       return;
     }
 
-    const img = pickLoopFrame(state.mode);
-    if (img) {
-      drawFrame(img);
+    const sheet = sheets[state.mode];
+    if (sheet) {
+      drawSpriteFrame(sheet, pickLoopFrameIndex(state.mode));
     }
   };
 
@@ -316,11 +317,11 @@ export function initHero() {
     }
     lastLoopTime = time;
 
-    if (state.mode === 'loop1' && frames.loop1?.length) {
-      loop1Index = (loop1Index + 1) % frames.loop1.length;
+    if (state.mode === 'loop1' && sheets.loop1) {
+      loop1Index = (loop1Index + 1) % sheets.loop1.meta.count;
     }
-    if (state.mode === 'loop2' && frames.loop2?.length) {
-      loop2Index = (loop2Index + 1) % frames.loop2.length;
+    if (state.mode === 'loop2' && sheets.loop2) {
+      loop2Index = (loop2Index + 1) % sheets.loop2.meta.count;
     }
   };
 
@@ -341,34 +342,44 @@ export function initHero() {
   /**
    * @param {keyof typeof HERO_SEQUENCES} key
    */
-  const ensureSequence = (key) => {
-    if (frames[key]?.length) {
-      return Promise.resolve(frames[key]);
+  const loadSheet = (key) => {
+    if (sheets[key]) {
+      return Promise.resolve(sheets[key]);
     }
 
-    if (!sequenceLoads[key]) {
+    if (!sheetLoads[key]) {
       const spec = HERO_SEQUENCES[key];
-      sequenceLoads[key] = loadSequenceBatched(spec, (index) => frameUrl(spec, index), {
-        concurrency: DEFERRED_CONCURRENCY,
-      }).then((loaded) => {
-        frames[key] = loaded;
+      const base = sheetBaseUrl(spec);
+
+      sheetLoads[key] = Promise.all([
+        fetch(`${base}/sheet.json`).then((res) => {
+          if (!res.ok) {
+            throw new Error(`hero sheet manifest failed: ${key}`);
+          }
+          return res.json();
+        }),
+        loadImage(`${base}/sheet.webp`),
+      ]).then(([meta, image]) => {
+        /** @type {HeroSheet} */
+        const sheet = { image, meta };
+        sheets[key] = sheet;
         render();
-        return loaded;
+        return sheet;
       });
     }
 
-    return sequenceLoads[key];
+    return sheetLoads[key];
   };
 
   const prefetchByScroll = (progress) => {
     if (progress >= SCROLL_PREFETCH.transfer12) {
-      void ensureSequence('transfer12');
+      void loadSheet('transfer12');
     }
     if (progress >= SCROLL_PREFETCH.loop2) {
-      void ensureSequence('loop2');
+      void loadSheet('loop2');
     }
     if (progress >= SCROLL_PREFETCH.transfer23) {
-      void ensureSequence('transfer23');
+      void loadSheet('transfer23');
     }
   };
 
@@ -431,85 +442,22 @@ export function initHero() {
     rafId = 0;
   };
 
-  const markReady = (firstFrame) => {
-    frames.loop1 = [firstFrame];
+  const markReady = () => {
     ready = true;
     loop1Index = 0;
     loop2Index = 0;
-    drawFrame(firstFrame);
+    if (sheets.loop1) {
+      drawSpriteFrame(sheets.loop1, 0);
+    }
     startIntroText();
     startLoop();
     update();
   };
 
-  const loadLoop1Bootstrap = async () => {
-    if (loop1BootstrapStarted) {
-      return;
-    }
-    loop1BootstrapStarted = true;
-
-    const spec = HERO_SEQUENCES.loop1;
-    const end = Math.min(spec.count, HERO_LOOP1_BOOTSTRAP_END);
-    if (end <= 1) {
-      return;
-    }
-
-    const chunk = await loadSequenceBatched(spec, (index) => frameUrl(spec, index), {
-      concurrency: DEFERRED_CONCURRENCY,
-      start: 2,
-      end,
-    });
-    frames.loop1.push(...chunk);
-  };
-
-  const loadLoop1Complete = async () => {
-    if (loop1CompleteStarted) {
-      return;
-    }
-    loop1CompleteStarted = true;
-
-    const spec = HERO_SEQUENCES.loop1;
-    const start = Math.min(spec.count, HERO_LOOP1_BOOTSTRAP_END) + 1;
-    if (start > spec.count) {
-      return;
-    }
-
-    const chunk = await loadSequenceBatched(spec, (index) => frameUrl(spec, index), {
-      concurrency: DEFERRED_CONCURRENCY,
-      start,
-      end: spec.count,
-    });
-    frames.loop1.push(...chunk);
-  };
-
-  const scheduleLoop1Loads = () => {
-    if (reducedMotion.matches) {
-      return;
-    }
-
-    runWhenIdle(() => {
-      void loadLoop1Bootstrap();
-    }, 1200);
-
-    const startComplete = () => {
-      void loadLoop1Complete();
-    };
-
-    window.addEventListener('scroll', startComplete, { once: true, passive: true });
-    window.setTimeout(startComplete, LOOP1_IDLE_DELAY_MS);
-  };
-
   const bootstrap = async () => {
     try {
-      setMediaLoadConcurrency(HERO_MEDIA_MAX_CONCURRENT);
-      const firstFrame = await loadImage(frameUrl(HERO_SEQUENCES.loop1, 1));
-      markReady(firstFrame);
-
-      if (reducedMotion.matches) {
-        return;
-      }
-
-      scheduleLoop1Loads();
+      await loadSheet('loop1');
+      markReady();
     } catch {
       ready = false;
     }
@@ -539,12 +487,13 @@ export function initHero() {
     listenersAttached = false;
     ready = false;
     introOpacity = 0;
-    loop1BootstrapStarted = false;
-    loop1CompleteStarted = false;
     pin.style.removeProperty('height');
-    for (const key of DEFERRED_SEQUENCE_KEYS) {
-      delete sequenceLoads[key];
+    for (const key of DEFERRED_SHEET_KEYS) {
+      delete sheetLoads[key];
+      delete sheets[key];
     }
+    delete sheets.loop1;
+    delete sheetLoads.loop1;
   };
 
   const applyMotionMode = () => {
