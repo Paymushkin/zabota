@@ -92,11 +92,22 @@
   width: 100%;
   height: 100%;
   opacity: 0;
+  visibility: hidden;
 }
 
 .tv-showcase__video-wrap {
-  overflow: visible;
+  z-index: 2;
+  overflow: hidden;
   pointer-events: none;
+}
+
+.tv-showcase__img--2 {
+  z-index: 1;
+}
+
+.tv-showcase__img--2.is-visible,
+.tv-showcase__video-wrap.is-visible {
+  visibility: visible;
 }
 
 .tv-showcase__video {

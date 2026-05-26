@@ -55,6 +55,23 @@ export function runWhenIdle(callback, timeout = 2500) {
 }
 
 /**
+ * Критичный ресурс (poster hero): без очереди, высокий приоритет.
+ * @param {string} url
+ */
+export function loadImageCritical(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.decoding = 'async';
+    if ('fetchPriority' in img) {
+      img.fetchPriority = 'high';
+    }
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`image failed: ${url}`));
+    img.src = url;
+  });
+}
+
+/**
  * @param {string} url
  */
 export function loadImage(url) {

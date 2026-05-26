@@ -9,7 +9,7 @@ import {
   HERO_TEXT_FADE_IN,
   HERO_TEXT_FADE_OUT,
 } from '../data/hero.js';
-import { loadImage } from '../utils/media-loader.js';
+import { loadImage, loadImageCritical } from '../utils/media-loader.js';
 import { clamp, easeInOut } from '../utils/math.js';
 import { isPinPast } from '../utils/scroll-pin.js';
 
@@ -157,6 +157,8 @@ export function initHero() {
   let introOpacity = 0;
   let introTimer = null;
   let introRafId = 0;
+  /** @type {HTMLImageElement | null} */
+  let posterImage = null;
 
   const syncPinHeight = () => {
     pin.style.height = `${window.innerHeight * HERO_PIN_VIEWPORT}px`;
@@ -177,6 +179,25 @@ export function initHero() {
     syncCanvasSize();
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+  };
+
+  /**
+   * @param {HTMLImageElement} img
+   */
+  const drawCoverImage = (img) => {
+    if (!img.complete) {
+      return;
+    }
+    syncCanvasSize();
+    const { width, height } = canvas;
+    const scale = Math.max(width / img.naturalWidth, height / img.naturalHeight);
+    const dw = img.naturalWidth * scale;
+    const dh = img.naturalHeight * scale;
+    const dx = (width - dw) / 2;
+    const dy = (height - dh) / 2;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(img, dx, dy, dw, dh);
   };
 
   /**
@@ -293,6 +314,11 @@ export function initHero() {
     const sheet = sheets[state.mode];
     if (sheet) {
       drawSpriteFrame(sheet, pickLoopFrameIndex(state.mode));
+      return;
+    }
+
+    if (state.mode === 'loop1' && posterImage) {
+      drawCoverImage(posterImage);
     }
   };
 
@@ -350,6 +376,10 @@ export function initHero() {
     if (!sheetLoads[key]) {
       const spec = HERO_SEQUENCES[key];
       const base = sheetBaseUrl(spec);
+      const loadSheetImage =
+        key === 'loop1'
+          ? () => loadImageCritical(`${base}/sheet.webp`)
+          : () => loadImage(`${base}/sheet.webp`);
 
       sheetLoads[key] = Promise.all([
         fetch(`${base}/sheet.json`).then((res) => {
@@ -358,7 +388,7 @@ export function initHero() {
           }
           return res.json();
         }),
-        loadImage(`${base}/sheet.webp`),
+        loadSheetImage(),
       ]).then(([meta, image]) => {
         /** @type {HeroSheet} */
         const sheet = { image, meta };
@@ -447,6 +477,7 @@ export function initHero() {
     loop1Index = 0;
     loop2Index = 0;
     if (sheets.loop1) {
+      posterImage = null;
       drawSpriteFrame(sheets.loop1, 0);
     }
     startIntroText();
@@ -454,12 +485,37 @@ export function initHero() {
     update();
   };
 
+  const markPosterReady = (img) => {
+    posterImage = img;
+    ready = true;
+    drawCoverImage(img);
+    startIntroText();
+    startLoop();
+    update();
+  };
+
   const bootstrap = async () => {
+    const loop1Base = sheetBaseUrl(HERO_SEQUENCES.loop1);
+    const posterUrl = `${loop1Base}/poster.webp`;
+
+    void loadImageCritical(posterUrl)
+      .then((img) => {
+        if (sheets.loop1) {
+          return;
+        }
+        if (!ready) {
+          markPosterReady(img);
+        }
+      })
+      .catch(() => {});
+
     try {
       await loadSheet('loop1');
       markReady();
     } catch {
-      ready = false;
+      if (!posterImage) {
+        ready = false;
+      }
     }
   };
 
@@ -487,6 +543,7 @@ export function initHero() {
     listenersAttached = false;
     ready = false;
     introOpacity = 0;
+    posterImage = null;
     pin.style.removeProperty('height');
     for (const key of DEFERRED_SHEET_KEYS) {
       delete sheetLoads[key];

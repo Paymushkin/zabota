@@ -20,7 +20,7 @@ export const HERO_TEXT_FADE_IN = 0.06;
 export const HERO_BALL_FADE_IN = 0.12;
 
 /** Появление текста фазы 1 при загрузке (без скролла). */
-export const HERO_INTRO_TEXT_DELAY_MS = 500;
+export const HERO_INTRO_TEXT_DELAY_MS = 150;
 export const HERO_INTRO_TEXT_FADE_MS = 650;
 
 /** @typedef {{ path: string; count: number }} HeroSequenceSpec */

@@ -11,9 +11,13 @@ function scheduleMetrika() {
 }
 
 function initBelowFoldSections() {
-  initWhenNear('.tv-showcase', () => {
-    import('./modules/tv-showcase.js').then(({ initTvShowcase }) => initTvShowcase());
-  });
+  initWhenNear(
+    '.tv-showcase',
+    () => {
+      import('./modules/tv-showcase.js').then(({ initTvShowcase }) => initTvShowcase());
+    },
+    '200% 0px',
+  );
 
   initWhenNear('.scroll-steps', () => {
     import('./modules/scroll-steps.js').then(({ initScrollSteps }) => initScrollSteps());

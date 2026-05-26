@@ -6,8 +6,11 @@ const ROOT = join(import.meta.dirname, '..');
 const HERO_DIR = join(ROOT, 'public', 'hero');
 const MAX_SHEET_DIM = 16384;
 const SHEET_COLS = 12;
-const SHEET_FRAME_WIDTH = 960;
-const SHEET_WEBP = { quality: 78, effort: 4 };
+const SHEET_FRAME_WIDTH = 800;
+const SHEET_WEBP = { quality: 72, effort: 4 };
+const POSTER_WIDTH = 960;
+const POSTER_WEBP = { quality: 76, effort: 4 };
+const POSTER_SEQUENCE = 'hero-1';
 
 /**
  * @param {string} dir
@@ -81,6 +84,16 @@ async function buildSequenceSprite(dir) {
 
   const stat = await readFile(sheetPath).then((b) => b.length);
   console.log(`  ${dir.split('/').pop()}: ${count} frames → sheet.webp (${sheetWidth}x${sheetHeight}, ${(stat / 1024 / 1024).toFixed(2)} MB)`);
+
+  if (dir.endsWith(POSTER_SEQUENCE)) {
+    const posterPath = join(dir, 'poster.webp');
+    await sharp(join(dir, files[0]))
+      .resize({ width: POSTER_WIDTH, withoutEnlargement: true })
+      .webp(POSTER_WEBP)
+      .toFile(posterPath);
+    const posterStat = await readFile(posterPath).then((b) => b.length);
+    console.log(`  ${POSTER_SEQUENCE}: poster.webp (${(posterStat / 1024).toFixed(0)} KB)`);
+  }
 
   return manifest;
 }

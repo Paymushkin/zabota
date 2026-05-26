@@ -15,6 +15,8 @@ export const TV_SHOWCASE_PROGRESS = {
   revealEnd: 0.58,
   videoStart: 0.68,
   videoEnd: 0.82,
+  /** Начать загрузку mp4 (доля progress pin). */
+  videoPrefetchStart: 0.35,
 };
 
 /** Масштаб на третьей стадии (полностью в правой колонке). */

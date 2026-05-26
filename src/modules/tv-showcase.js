@@ -10,7 +10,6 @@ import { createRafScrollLoop, getPinScrollProgress, isPinPast } from '../utils/s
 
 const PEEK_VISIBLE_RATIO = 0.5;
 const VIDEO_END_EPS = 0.05;
-const VIDEO_BIND_THRESHOLD = 0.02;
 
 /**
  * @param {ParentNode} root
@@ -60,14 +59,18 @@ function parkVideoOnLastFrame(video) {
 
 /**
  * @param {HTMLVideoElement} video
- * @param {number} videoT
  */
+function isVideoReadyToShow(video) {
+  return video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+}
+
 /**
  * @param {HTMLVideoElement} video
+ * @param {boolean} shouldPlay
  * @param {() => void} bindVideoSource
  */
-function syncVideoPlayback(video, videoT, bindVideoSource) {
-  if (videoT <= VIDEO_BIND_THRESHOLD) {
+function syncVideoPlayback(video, shouldPlay, bindVideoSource) {
+  if (!shouldPlay) {
     video.pause();
     video.currentTime = 0;
     return;
@@ -87,7 +90,7 @@ function syncVideoPlayback(video, videoT, bindVideoSource) {
     }
   };
 
-  if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+  if (isVideoReadyToShow(video)) {
     startPlayback();
     return;
   }
@@ -117,6 +120,16 @@ function bindVideoSource(video) {
 }
 
 /**
+ * @param {HTMLElement} element
+ * @param {number} opacity
+ */
+function setLayerOpacity(element, opacity) {
+  const clamped = Math.max(0, Math.min(1, opacity));
+  element.style.opacity = String(clamped);
+  element.classList.toggle('is-visible', clamped > 0.02);
+}
+
+/**
  * @param {HTMLElement} stage
  * @param {HTMLElement} media
  * @param {HTMLImageElement} img1
@@ -124,13 +137,19 @@ function bindVideoSource(video) {
  * @param {HTMLElement} videoWrap
  * @param {HTMLVideoElement} video
  * @param {number} progress
+ * @param {() => void} bindVideoSource
  */
 function applyTvShowcaseFrame(stage, media, img1, img2, videoWrap, video, progress, bindVideoSource) {
-  const { crossfadeStart, crossfadeEnd, revealStart, revealEnd, videoStart, videoEnd } =
-    TV_SHOWCASE_PROGRESS;
+  const {
+    crossfadeStart,
+    crossfadeEnd,
+    revealStart,
+    revealEnd,
+    videoStart,
+    videoPrefetchStart,
+  } = TV_SHOWCASE_PROGRESS;
   const crossfadeT = segmentT(progress, crossfadeStart, crossfadeEnd);
   const revealT = segmentT(progress, revealStart, revealEnd);
-  const videoT = segmentT(progress, videoStart, videoEnd);
   const layout = measureLayout(media, img2);
 
   const translateX = lerp(layout.peekX, layout.revealX, revealT);
@@ -138,17 +157,40 @@ function applyTvShowcaseFrame(stage, media, img1, img2, videoWrap, video, progre
 
   stage.style.transform = `translate3d(${translateX}px, -50%, 0) scale(${scale})`;
 
-  img1.style.opacity = String(1 - crossfadeT);
-  img2.style.opacity = String(crossfadeT * (1 - videoT));
-  videoWrap.style.opacity = String(videoT);
-  syncVideoPlayback(video, videoT, bindVideoSource);
+  if (progress >= videoPrefetchStart) {
+    bindVideoSource();
+  }
+
+  const wantsVideo = progress >= videoStart;
+  const showVideo = wantsVideo && isVideoReadyToShow(video);
+
+  if (showVideo) {
+    setLayerOpacity(img1, 0);
+    setLayerOpacity(img2, 0);
+    setLayerOpacity(videoWrap, 1);
+    syncVideoPlayback(video, true, bindVideoSource);
+    return;
+  }
+
+  setLayerOpacity(videoWrap, 0);
+  syncVideoPlayback(video, false, bindVideoSource);
+
+  if (wantsVideo) {
+    setLayerOpacity(img1, 0);
+    setLayerOpacity(img2, 1);
+    return;
+  }
+
+  setLayerOpacity(img1, 1 - crossfadeT);
+  setLayerOpacity(img2, crossfadeT);
 }
 
 function clearTvShowcaseStyles(stage, img1, img2, videoWrap) {
   stage.style.removeProperty('transform');
-  img1.style.removeProperty('opacity');
-  img2.style.removeProperty('opacity');
-  videoWrap.style.removeProperty('opacity');
+  for (const el of [img1, img2, videoWrap]) {
+    el.style.removeProperty('opacity');
+    el.classList.remove('is-visible');
+  }
 }
 
 export function initTvShowcase() {
@@ -166,15 +208,13 @@ export function initTvShowcase() {
 
   hydrateLazyImages(stage);
   video.playbackRate = TV_SHOWCASE_VIDEO_PLAYBACK_RATE;
+  video.preload = 'auto';
 
-  let videoSourceBound = false;
   const bindVideoSourceOnce = () => {
-    if (videoSourceBound) {
-      return;
-    }
-    videoSourceBound = true;
     bindVideoSource(video);
   };
+
+  bindVideoSourceOnce();
 
   const syncLayout = () => {
     pin.style.height = `${TV_SHOWCASE_PIN_VIEWPORT * window.innerHeight}px`;
@@ -209,9 +249,12 @@ export function initTvShowcase() {
     );
   });
 
-  img1.addEventListener('load', schedule, { once: true });
-  img2.addEventListener('load', schedule, { once: true });
-  video.addEventListener('loadeddata', schedule, { once: true });
+  const onMediaReady = () => schedule();
+
+  img1.addEventListener('load', onMediaReady, { once: true });
+  img2.addEventListener('load', onMediaReady, { once: true });
+  video.addEventListener('loadeddata', onMediaReady, { once: true });
+  video.addEventListener('canplay', onMediaReady);
 
   const detachAll = () => {
     detach();
