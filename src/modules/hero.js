@@ -141,6 +141,7 @@ export function initHero(heroConfig = defaultHeroConfig) {
   let listenersAttached = false;
   let ready = false;
   let introOpacity = 0;
+  let introStarted = false;
   let introTimer = null;
   let introRafId = 0;
   /** @type {HTMLImageElement | null} */
@@ -421,6 +422,11 @@ export function initHero(heroConfig = defaultHeroConfig) {
   };
 
   const startIntroText = () => {
+    if (introStarted) {
+      return;
+    }
+    introStarted = true;
+
     stopIntroText();
     introOpacity = 0;
     applyTextOpacity();
@@ -529,6 +535,7 @@ export function initHero(heroConfig = defaultHeroConfig) {
     listenersAttached = false;
     ready = false;
     introOpacity = 0;
+    introStarted = false;
     posterImage = null;
     pin.style.removeProperty('height');
     for (const key of DEFERRED_SHEET_KEYS) {
@@ -547,7 +554,12 @@ export function initHero(heroConfig = defaultHeroConfig) {
         introOpacity = 1;
       }
     } else if (ready) {
-      startIntroText();
+      if (!introStarted) {
+        startIntroText();
+      } else {
+        introOpacity = 1;
+        applyTextOpacity();
+      }
       startLoop();
     }
     render();
