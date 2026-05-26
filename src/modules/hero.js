@@ -11,6 +11,7 @@ import {
 } from '../data/hero.js';
 import { loadImage, loadSequenceBatched, runWhenIdle } from '../utils/media-loader.js';
 import { clamp, easeInOut } from '../utils/math.js';
+import { isPinPast } from '../utils/scroll-pin.js';
 
 const LOOP1_CONCURRENCY = 6;
 const DEFERRED_CONCURRENCY = 4;
@@ -130,6 +131,7 @@ export function initHero() {
   const phase3Ball = document.querySelector('[data-hero-ball]');
   const phase3BallImg = phase3Ball?.querySelector('.hero__ball__img');
   const scenes = [...document.querySelectorAll('[data-hero-scene]')];
+  const benefitsHeader = document.querySelector('[data-benefits-header]');
   if (!pin || !canvas) {
     return;
   }
@@ -238,13 +240,20 @@ export function initHero() {
 
     if (phase3Ball) {
       const opacity = getBallOpacity(scrollProgress);
+      const ballVisible = opacity > 0.02;
       phase3Ball.style.opacity = String(opacity);
-      phase3Ball.classList.toggle('is-active', opacity > 0.02);
-      phase3Ball.setAttribute('aria-hidden', opacity <= 0.02 ? 'true' : 'false');
+      phase3Ball.classList.toggle('is-active', ballVisible);
+      const benefitsOverlap =
+        Boolean(benefitsHeader) &&
+        benefitsHeader.getBoundingClientRect().top < window.innerHeight * 0.92;
+      const overlapActive = ballVisible && benefitsOverlap && !isPinPast(pin);
+      phase3Ball.classList.toggle('hero__ball--overlap', overlapActive);
+      benefitsHeader?.classList.toggle('benefits__header--overlap', overlapActive);
+      phase3Ball.setAttribute('aria-hidden', ballVisible ? 'false' : 'true');
 
       if (phase3BallImg) {
         const scale = reducedMotion.matches ? 1 : 0.85 + opacity * 0.15;
-        phase3BallImg.style.transform = `translateY(32%) scale(${scale})`;
+        phase3BallImg.style.transform = `translate3d(0, 32%, 0) scale(${scale})`;
       }
     }
   };

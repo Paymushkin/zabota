@@ -2,20 +2,38 @@
 
 .benefits {
   position: relative;
-  z-index: 2;
-  padding: 40px 0 115px;
+  z-index: 3;
+  padding: 0 0 115px;
   color: #fff;
   background: transparent;
 }
 
+/* Резервирует место, пока заголовок fixed поверх мяча */
+.benefits__overlap-spacer {
+  height: clamp(300px, 42vh, 480px);
+  pointer-events: none;
+}
+
 .benefits__header {
+  position: relative;
+  z-index: 4;
   margin: 0 0 60px;
   text-align: center;
+  pointer-events: none;
+
+  &.benefits__header--overlap {
+    position: fixed;
+    inset-inline: 0;
+    bottom: clamp(88px, 13vh, 132px);
+    z-index: 4;
+    margin: 0;
+    padding-inline: var(--page-gutter);
+  }
 }
 
 .benefits__title {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   margin: 0 0 20px;
   font-family: var(--font-heading);
   font-weight: 500;
@@ -27,6 +45,8 @@
 }
 
 .benefits__period {
+  position: relative;
+  z-index: 1;
   margin: 0;
   font-family: var(--font-text);
   font-size: var(--font-size-body-lg);
@@ -37,6 +57,8 @@
 }
 
 .benefits__list {
+  position: relative;
+  z-index: 3;
   display: grid;
   grid-template-columns: repeat(2, max-content);
   justify-content: center;
@@ -44,6 +66,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  background: #000;
 }
 
 .benefits__item {
@@ -103,15 +126,15 @@
 
 @include bp-mobile {
   .benefits {
-    padding: 56px 0 var(--section-gap);
+    padding: 0 0 var(--section-gap);
   }
 
-  .benefits .container {
-    padding-inline: var(--page-gutter);
+  .benefits__overlap-spacer {
+    height: clamp(240px, 38vh, 360px);
   }
 
-  .benefits__header {
-    margin-bottom: 48px;
+  .benefits__header.benefits__header--overlap {
+    bottom: clamp(64px, 11vh, 96px);
   }
 
   .benefits__title {
@@ -133,6 +156,7 @@
     grid-template-columns: 1fr;
     gap: 40px;
     justify-items: center;
+    padding-inline: var(--page-gutter);
   }
 
   .benefits__item {

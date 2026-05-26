@@ -61,6 +61,14 @@
   &.is-active {
     visibility: visible;
   }
+
+  /* Общий слой с benefits: мяч под заголовком, виден по краям */
+  &.hero__ball--overlap {
+    position: fixed;
+    z-index: 2;
+    inset-inline: 0;
+    padding-inline: var(--page-gutter);
+  }
 }
 
 .hero__ball__img {
@@ -68,10 +76,10 @@
   width: min(312px, 100%);
   max-width: 312px;
   height: auto;
-  transform: translateY(32%) scale(0.85);
+  transform: translate3d(0, 32%, 0) scale(0.85);
   transform-origin: center bottom;
   /* transform задаётся в JS вместе с opacity фазы 3 */
-  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 .hero__header {
