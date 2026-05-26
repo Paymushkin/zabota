@@ -3,17 +3,22 @@
 
 .faq {
   padding-bottom: 0;
+  color: #fff;
 }
 
 .faq__card {
   @include section-padding-block;
   padding-inline: 100px;
+  background: #535353;
+  border-radius: var(--radius-card);
+  color: #fff;
 }
 
 .faq__title {
-  margin: 0 0 80px;
   @include heading-section;
+  margin-bottom: 80px;
   text-align: center;
+  color: #fff;
 }
 
 .faq__list {
@@ -23,16 +28,16 @@
 }
 
 .faq__item {
-  border-bottom: 1px solid rgb(67 60 72 / 12%);
+  border-bottom: 1px solid rgb(255 255 255 / 20%);
   transition: background-color var(--duration-interactive) var(--ease-interactive);
 }
 
 @include hover-only {
   .faq__item:has(.faq__question:hover) {
-    background-color: rgb(67 60 72 / 4%);
+    background-color: rgb(255 255 255 / 6%);
 
     .faq__icon {
-      color: var(--color-link-on-light);
+      color: #fff;
     }
   }
 }
@@ -53,12 +58,12 @@
   font-size: 32px;
   font-weight: 500;
   line-height: 1.2;
-  color: var(--color-text);
+  color: #fff;
   transition: color var(--duration-interactive) var(--ease-interactive);
 
   @include hover-only {
     &:hover {
-      color: var(--color-text-hover);
+      color: #fff;
     }
   }
 
@@ -69,13 +74,14 @@
   flex: 1;
   min-width: 0;
   text-wrap: balance;
+  color: inherit;
 }
 
 .faq__icon {
   flex-shrink: 0;
   width: 32px;
   height: 20px;
-  color: var(--color-text);
+  color: #fff;
   transition:
     transform 0.35s ease,
     color var(--duration-interactive) var(--ease-interactive);
@@ -104,11 +110,13 @@
   overflow: hidden;
   min-height: 0;
   max-width: 90%;
+  color: #fff;
   @include text-body-lg;
   text-wrap: pretty;
 
   p {
     margin: 0;
+    color: #fff;
     text-wrap: pretty;
 
     & + p {
@@ -117,14 +125,15 @@
   }
 
   a {
-    color: inherit;
+    color: #fff;
     text-decoration: underline;
+    text-decoration-thickness: 1px;
     text-underline-offset: 0.15em;
-    transition: color var(--duration-interactive) var(--ease-interactive);
 
     @include hover-only {
       &:hover {
-        color: var(--color-link-on-light);
+        color: #fff;
+        text-decoration: underline;
       }
     }
 
@@ -135,6 +144,18 @@
 .faq__more {
   display: block;
   margin: 0 auto;
+}
+
+.faq__more.btn-pill_accent {
+  background: #ff7f24;
+  color: #fff;
+
+  @media (hover: hover) {
+    &:hover {
+      background: #ff943d;
+      color: #fff;
+    }
+  }
 }
 
 .faq__more_hidden {

@@ -43,10 +43,7 @@ export default defineConfig({
   build: {
     cssMinify: true,
     rollupOptions: {
-      input: {
-        main: path.resolve(root, 'index.html'),
-        scroll: path.resolve(root, 'scroll.html'),
-      },
+      input: path.resolve(root, 'index.html'),
       output: {
         assetFileNames: 'assets/[name]-[hash][extname]',
         entryFileNames: 'assets/[name]-[hash].js',

@@ -5,10 +5,9 @@
   flex: 1 0 auto;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
-  min-height: 100dvh;
+  @include min-viewport-height;
   padding: 40px 24px;
-  background: var(--color-bg-page);
+  background: #fff;
 }
 
 .viewport-stub__inner {

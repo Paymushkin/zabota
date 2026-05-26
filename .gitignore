@@ -12,6 +12,9 @@ dist/
 # Сгенерированные ассеты (промежуточные PNG в public не коммитим)
 public/img/*.png
 
+# Hero: только webp в репозитории
+public/hero/**/*.jpg
+
 # Prerender (создаётся npm run prerender)
 src/sections/generated/
 

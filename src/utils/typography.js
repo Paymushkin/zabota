@@ -51,27 +51,6 @@ export function fixHangingPrepositions(text) {
   return text.replace(HANGING_WORDS_RE, '$1$2\u00A0');
 }
 
-export function fixHangingPrepositionsHtml(html) {
-  const template = document.createElement('template');
-  template.innerHTML = html;
-
-  const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_TEXT, {
-    acceptNode(node) {
-      return node.textContent.trim()
-        ? NodeFilter.FILTER_ACCEPT
-        : NodeFilter.FILTER_REJECT;
-    },
-  });
-
-  let node = walker.nextNode();
-  while (node) {
-    node.textContent = fixHangingPrepositions(node.textContent);
-    node = walker.nextNode();
-  }
-
-  return template.innerHTML;
-}
-
 export function fixHangingPrepositionsInElement(root) {
   if (!root) return;
 

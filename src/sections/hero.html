@@ -1,28 +1,63 @@
       <section
         class="hero"
-        aria-labelledby="hero-title"
         aria-label="Спортивная страховка телевизора от Яндекс Маркета и Заботы"
       >
-        <div class="hero__inner">
-          <header class="hero__header">
-            <img
-              class="hero__header-logo"
-              src="/img/logo.svg"
-              width="369"
-              height="35"
-              alt="Яндекс Маркет и Забота"
-            />
-          </header>
-          <div class="hero__content">
-            <div class="hero__copy">
-              <h1 class="hero__title" id="hero-title">
-                Чтобы матч был<br />
-                <span class="hero__title-accent">главным&nbsp;событием</span>
-              </h1>
-              <p class="hero__text">
-                Подключите «спортивную» страховку для защиты телевизора. Бесплатно заменим ваш,
-                если он случайно пострадает во время чемпионата мира
-              </p>
+        <div class="hero__pin" data-hero-pin>
+          <div class="hero__sticky">
+            <canvas class="hero__canvas" data-hero-canvas aria-hidden="true"></canvas>
+            <div class="hero__overlay">
+              <div class="hero__ball" data-hero-ball aria-hidden="true">
+                <img
+                  class="hero__ball__img"
+                  src="/img/ball.webp"
+                  width="1200"
+                  height="1200"
+                  alt=""
+                  decoding="async"
+                  fetchpriority="low"
+                />
+              </div>
+              <header class="hero__header">
+                <img
+                  class="hero__logo"
+                  src="/img/logo.svg"
+                  width="369"
+                  height="35"
+                  alt="Яндекс Маркет и Забота"
+                  decoding="async"
+                  fetchpriority="high"
+                />
+              </header>
+              <div class="hero__scenes">
+                <div class="hero__scene hero__scene--1" data-hero-scene="1">
+                  <h1 class="hero__title" id="hero-scene-1-title">
+                    Телевизор<br />
+                    выглядит так после<br />
+                    матча?
+                  </h1>
+                </div>
+                <div class="hero__scene hero__scene--2" data-hero-scene="2">
+                  <h2 class="hero__title" id="hero-scene-2-title">
+                    Понятно.<br />
+                    Знаем как решить,<br />
+                    честно
+                  </h2>
+                </div>
+                <div class="hero__scene hero__scene--3" data-hero-scene="3">
+                  <div class="hero__scene3">
+                    <div class="hero__scene3__copy">
+                      <h2 class="hero__title" id="hero-scene-3-title">
+                        Фанатская страховка<br />
+                        от переизбытка эмоций
+                      </h2>
+                      <p class="hero__scene3__lead">
+                        Если телевизор попадет под волну ваших эмоций и получит повреждения, мы
+                        бесплатно его заменим
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

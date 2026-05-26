@@ -1,12 +1,13 @@
-import { STEPS_ITEMS } from '../data/steps.js';
+import { SCROLL_STEPS_IMAGE_VERSION, SCROLL_STEPS_ITEMS } from '../data/scroll-steps.js';
 
 function assetUrl(path) {
   const base = import.meta.env.BASE_URL;
-  return `${base}${path.replace(/^\//, '')}`;
+  const url = `${base}${path.replace(/^\//, '')}`;
+  return `${url}?v=${SCROLL_STEPS_IMAGE_VERSION}`;
 }
 
 export function renderScrollStepsCardsHtml() {
-  return STEPS_ITEMS.map((item, index) => {
+  return SCROLL_STEPS_ITEMS.map((item, index) => {
     const n = index + 1;
     const titleId = `scroll-steps-card-title-${n}`;
 
@@ -18,8 +19,10 @@ export function renderScrollStepsCardsHtml() {
         aria-labelledby="${titleId}"
       >
         <header class="scroll-steps__card-header">
-          <p class="scroll-steps__badge">Шаг ${n}</p>
-          <h3 class="scroll-steps__card-title" id="${titleId}">${item.title}</h3>
+          <div class="scroll-steps__card-heading">
+            <p class="scroll-steps__badge">Шаг ${n}</p>
+            <h3 class="scroll-steps__card-title" id="${titleId}">${item.title}</h3>
+          </div>
           <p class="scroll-steps__card-note">${item.note}</p>
         </header>
         <div class="scroll-steps__card-media">

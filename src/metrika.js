@@ -10,6 +10,15 @@ const METRIKA_OPTIONS = {
 const COUNTERS = [99737989, 44830285];
 
 function loadMetrika() {
+  if (!document.querySelector('link[data-metrika-preconnect]')) {
+    const preconnect = document.createElement('link');
+    preconnect.rel = 'preconnect';
+    preconnect.href = 'https://mc.yandex.ru';
+    preconnect.crossOrigin = 'anonymous';
+    preconnect.dataset.metrikaPreconnect = '';
+    document.head.appendChild(preconnect);
+  }
+
   COUNTERS.forEach((id) => {
     window.ym =
       window.ym ||
@@ -22,6 +31,9 @@ function loadMetrika() {
   const script = document.createElement('script');
   script.async = true;
   script.src = `https://mc.yandex.ru/metrika/tag.js?id=${COUNTERS[0]}`;
+  script.onerror = () => {
+    script.remove();
+  };
   document.head.appendChild(script);
 
   script.onload = () => {

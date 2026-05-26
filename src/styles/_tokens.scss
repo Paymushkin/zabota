@@ -1,7 +1,7 @@
 :root {
-  --color-bg-darker: #111013;
+  --color-bg-darker: #000;
   --color-bg-card: #f6f1f1;
-  --color-bg-page: #fff;
+  --color-bg-page: #000;
   --color-text: #433c48;
   --color-text-light: #f6f1f1;
   --color-text-hover: #2a2530;
@@ -24,7 +24,6 @@
   --font-size-body-lg: 22px;
   --font-size-btn: 32px;
 
-  --shadow-steps-hover: 2px 10px 22px rgb(67 60 72 / 10%);
   --shadow-btn-hover: 0 8px 24px rgb(67 60 72 / 18%);
   --duration-interactive: 0.2s;
   --ease-interactive: ease;

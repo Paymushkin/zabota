@@ -1,25 +1,23 @@
 import { renderScrollStepsCardsHtml } from '../render/scroll-steps.js';
+import { clamp, easeInOut, lerp } from '../utils/math.js';
+import { createRafScrollLoop, getPinScrollProgress, isPinPast } from '../utils/scroll-pin.js';
 
 const STEP_COUNT = 3;
 const TRANSITION_COUNT = STEP_COUNT - 1;
-const PAST_PIN_EPS = 2;
-/** Вертикальный шаг стопки: больше — сильнее выглядывают задние карточки сверху. */
-const STACK_OFFSET_Y = 84;
+const DESKTOP_MQ = '(min-width: 980px)';
+/** Выглядывание из-под предыдущей карточки: 2-я — 60px, 3-я — 110px. */
+const STACK_PEEK_Y = [0, 60, 110];
+const STACK_PEEK_MAX = Math.max(...STACK_PEEK_Y);
+/** Скролл на один переход между шагами (доля viewport). */
+const SCROLL_PER_STEP_VH = 1;
 const STACK_SCALES = [1, 0.95, 0.9];
-
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function lerp(a, b, t) {
-  return a + (b - a) * t;
-}
+const INACTIVE_OPACITY = 0.9;
 
 function stackPose(depth) {
   const d = clamp(depth, 0, 2);
   return {
     scale: STACK_SCALES[d] ?? STACK_SCALES[STACK_SCALES.length - 1],
-    y: -d * STACK_OFFSET_Y,
+    y: -(STACK_PEEK_Y[d] ?? STACK_PEEK_Y[STACK_PEEK_Y.length - 1]),
     z: 3 - d,
   };
 }
@@ -48,10 +46,39 @@ function exitPose() {
   };
 }
 
-function applyPose(card, pose, hidden) {
+/** Прозрачность всей карточки в стопке — скрывает текст следующих шагов сзади. */
+function cardStackOpacity(cardProgress) {
+  if (cardProgress >= 0) {
+    return 1;
+  }
+  if (cardProgress > -1) {
+    return lerp(INACTIVE_OPACITY, 1, easeInOut(1 + cardProgress));
+  }
+  return INACTIVE_OPACITY;
+}
+
+/**
+ * Текст: 0 в глубине стопки; плавный вход при выходе на передний план;
+ * плавный выход, когда активная карточка уезжает вниз.
+ */
+function cardTextOpacity(cardProgress) {
+  if (cardProgress >= 1) {
+    return 0;
+  }
+  if (cardProgress >= 0) {
+    return 1 - easeInOut(cardProgress);
+  }
+  if (cardProgress > -1) {
+    return easeInOut(1 + cardProgress);
+  }
+  return 0;
+}
+
+function applyPose(card, pose, hidden, cardOpacity = 1, textOpacity = 1) {
   card.style.transform = `translate(-50%, ${pose.y}px) scale(${pose.scale})`;
   card.style.zIndex = String(pose.z);
-  card.style.opacity = hidden ? '0' : '1';
+  card.style.opacity = hidden ? '0' : String(cardOpacity);
+  card.style.setProperty('--scroll-steps-text-opacity', hidden ? '0' : String(textOpacity));
   card.style.visibility = hidden ? 'hidden' : 'visible';
   card.setAttribute('aria-hidden', hidden ? 'true' : 'false');
 }
@@ -80,11 +107,19 @@ function applyScrollStepsFrame(cards, progress) {
           z: 3,
         },
         false,
+        1,
+        cardTextOpacity(cardProgress),
       );
       return;
     }
 
-    applyPose(card, stackPoseLerp(-cardProgress), false);
+    applyPose(
+      card,
+      stackPoseLerp(-cardProgress),
+      false,
+      cardStackOpacity(cardProgress),
+      cardTextOpacity(cardProgress),
+    );
   });
 }
 
@@ -92,6 +127,7 @@ function clearCardStyles(card) {
   card.style.removeProperty('transform');
   card.style.removeProperty('z-index');
   card.style.removeProperty('opacity');
+  card.style.removeProperty('--scroll-steps-text-opacity');
   card.style.removeProperty('visibility');
   card.removeAttribute('aria-hidden');
 }
@@ -109,9 +145,27 @@ export function initScrollSteps() {
     return;
   }
 
+  const section = pin.closest('.scroll-steps');
+  const desktopMq = window.matchMedia(DESKTOP_MQ);
+
+  const syncLayout = () => {
+    const card = cards[0];
+    if (!card) {
+      return;
+    }
+    deck.style.minHeight = `${card.offsetHeight + STACK_PEEK_MAX}px`;
+
+    const scrollTrack = TRANSITION_COUNT * window.innerHeight * SCROLL_PER_STEP_VH;
+    const viewportHeight = window.innerHeight;
+    const pinHeight = desktopMq.matches
+      ? viewportHeight + scrollTrack
+      : deck.offsetHeight + scrollTrack;
+
+    pin.style.height = `${pinHeight}px`;
+    section?.style.removeProperty('min-height');
+  };
+
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let ticking = false;
-  let listenersAttached = false;
 
   const applyPastPinFrame = () => {
     cards.forEach((card, index) => {
@@ -123,56 +177,38 @@ export function initScrollSteps() {
     });
   };
 
-  const update = () => {
-    ticking = false;
-    const scrollRange = pin.offsetHeight - window.innerHeight;
-    const pinRect = pin.getBoundingClientRect();
-    const pastPin = pinRect.bottom <= window.innerHeight + PAST_PIN_EPS;
-    const progress = scrollRange <= 0 ? 0 : clamp(-pinRect.top / scrollRange, 0, 1);
+  const { schedule, attach, detach } = createRafScrollLoop(() => {
+    syncLayout();
 
-    if (pastPin) {
+    if (isPinPast(pin)) {
       applyPastPinFrame();
       return;
     }
 
-    applyScrollStepsFrame(cards, progress);
-  };
+    applyScrollStepsFrame(cards, getPinScrollProgress(pin));
+  });
 
-  const schedule = () => {
-    if (!ticking) {
-      ticking = true;
-      requestAnimationFrame(update);
-    }
-  };
+  cards.forEach((card) => {
+    card.querySelector('img')?.addEventListener('load', schedule, { once: true });
+  });
 
-  const attach = () => {
-    if (listenersAttached) {
-      return;
-    }
-    window.addEventListener('scroll', schedule, { passive: true });
-    window.addEventListener('resize', schedule, { passive: true });
-    listenersAttached = true;
-    schedule();
-  };
-
-  const detach = () => {
-    if (!listenersAttached) {
-      return;
-    }
-    window.removeEventListener('scroll', schedule);
-    window.removeEventListener('resize', schedule);
-    listenersAttached = false;
+  const detachAll = () => {
+    detach();
     cards.forEach(clearCardStyles);
+    deck.style.removeProperty('min-height');
+    pin.style.removeProperty('height');
+    section?.style.removeProperty('min-height');
   };
 
   const applyMode = () => {
     if (reducedMotion.matches) {
-      detach();
+      detachAll();
     } else {
       attach();
     }
   };
 
   reducedMotion.addEventListener('change', applyMode);
+  desktopMq.addEventListener('change', schedule);
   applyMode();
 }

@@ -1,6 +1,20 @@
 import { FAQ_ITEMS, FAQ_VISIBLE_COUNT } from '../data/faq.js';
 import { renderFaqListHtml } from '../render/faq.js';
 
+const FAQ_MORE_LABEL_EXPAND = 'Показать ещё';
+const FAQ_MORE_LABEL_COLLAPSE = 'Свернуть';
+
+function setFaqMoreExpanded(moreBtn, expanded) {
+  moreBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  moreBtn.textContent = expanded ? FAQ_MORE_LABEL_COLLAPSE : FAQ_MORE_LABEL_EXPAND;
+}
+
+function setFaqListExpanded(expanded) {
+  document.querySelectorAll('[data-faq-hidden]').forEach((item) => {
+    item.classList.toggle('faq__item_hidden', !expanded);
+  });
+}
+
 function setFaqItemOpen(item, open) {
   const button = item.querySelector('.faq__question');
   const answer = item.querySelector('.faq__answer');
@@ -49,12 +63,11 @@ function bindFaqEvents() {
 
   if (moreBtn) {
     moreBtn.addEventListener('click', () => {
-      document.querySelectorAll('[data-faq-hidden]').forEach((item) => {
-        item.classList.remove('faq__item_hidden');
-      });
-      moreBtn.classList.add('faq__more_hidden');
-      moreBtn.setAttribute('aria-hidden', 'true');
-      moreBtn.setAttribute('aria-expanded', 'true');
+      const expanded = moreBtn.getAttribute('aria-expanded') === 'true';
+      const nextExpanded = !expanded;
+
+      setFaqListExpanded(nextExpanded);
+      setFaqMoreExpanded(moreBtn, nextExpanded);
     });
   }
 }

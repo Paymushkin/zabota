@@ -1,0 +1,124 @@
+@use '../mixins' as *;
+
+.tv-showcase {
+  position: relative;
+  z-index: 2;
+  background: #000;
+}
+
+.tv-showcase__pin {
+  overflow: visible;
+  @include min-viewport-height;
+}
+
+.tv-showcase__sticky {
+  @include sticky-viewport;
+  overflow: visible;
+  background: #000;
+}
+
+.tv-showcase__inner {
+  display: grid;
+  grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(24px, 4vw, 64px);
+  box-sizing: border-box;
+  height: 100%;
+  padding-inline: var(--page-gutter);
+  overflow: visible;
+}
+
+.tv-showcase__copy {
+  position: relative;
+  z-index: 2;
+  max-width: 520px;
+}
+
+.tv-showcase__title {
+  margin: 0 0 32px;
+  font-family: var(--font-heading);
+  font-size: 46px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 108%;
+  letter-spacing: -0.46px;
+  color: #fff;
+  text-wrap: balance;
+}
+
+.tv-showcase__lead {
+  margin: 0;
+  max-width: 480px;
+  @include text-lead-light;
+}
+
+.tv-showcase__media {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+  overflow: visible;
+}
+
+.tv-showcase__stage {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  z-index: 1;
+  width: max-content;
+  line-height: 0;
+  transform: translate3d(0, -50%, 0);
+  transform-origin: left center;
+  will-change: transform;
+  pointer-events: none;
+}
+
+.tv-showcase__img {
+  display: block;
+  width: auto;
+  height: min(78vh, 933px);
+  max-height: 933px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.tv-showcase__img--1 {
+  opacity: 1;
+}
+
+.tv-showcase__img--2,
+.tv-showcase__video-wrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+
+.tv-showcase__video-wrap {
+  overflow: visible;
+  pointer-events: none;
+}
+
+.tv-showcase__video {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  translate: 0 -50%;
+  object-fit: contain;
+  object-position: left center;
+}
+
+@include bp-tablet {
+  .tv-showcase__title {
+    font-size: clamp(32px, 4.5vw, 46px);
+    letter-spacing: -0.32px;
+  }
+
+  .tv-showcase__lead {
+    font-size: clamp(18px, 2.8vw, 30px);
+    letter-spacing: 0.36px;
+  }
+}

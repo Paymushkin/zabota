@@ -1,7 +1,9 @@
 @use '../mixins' as *;
+@use '../interactive' as *;
 
 .documents {
-  margin-bottom: var(--section-gap);
+  background: transparent;
+  padding-block: 0;
 }
 
 .documents__inner {
@@ -9,36 +11,75 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
+  width: 100%;
+  max-width: 890px;
+  margin-inline: auto;
+  padding-top: 80px;
 }
 
 .documents__title {
-  margin: 0 0 20px;
   @include heading-section;
+  margin-bottom: 20px;
+  color: var(--color-text-light);
+  font-size: 54px;
 }
 
 .documents__text {
   margin: 0 0 40px;
   @include text-body-lg;
+  color: rgb(246 241 241 / 92%);
 }
 
 .documents__actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 40px;
-  list-style: none;
+  width: 100%;
   margin: 0;
   padding: 0;
+  list-style: none;
+}
 
-  .btn-pill {
-    box-shadow: none;
+.documents__actions li {
+  display: flex;
+  min-width: 0;
+}
 
-    @media (hover: hover) {
-      &:hover {
-        box-shadow: var(--shadow-btn-hover);
-      }
-    }
+.documents__actions .btn-pill {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 64px;
+  padding: 20px 32px;
+  box-sizing: border-box;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: none;
+  transition:
+    background-position 0.45s var(--ease-interactive),
+    filter var(--duration-interactive) var(--ease-interactive),
+    transform var(--duration-interactive) var(--ease-interactive),
+    box-shadow var(--duration-interactive) var(--ease-interactive);
+
+  &:visited,
+  &:hover,
+  &:active,
+  &:focus {
+    text-decoration: none;
+    color: #fff;
   }
+}
+
+.documents__actions li:first-child .btn-pill {
+  @include gradient-pill-hover(linear-gradient(90deg, #ff252b 0%, #fff200 50%, #ff252b 100%));
+}
+
+.documents__actions li:nth-child(2) .btn-pill {
+  @include gradient-pill-hover(linear-gradient(90deg, #fff200 0%, #ff2d8d 50%, #fff200 100%));
+}
+
+.documents + .faq {
+  margin-top: var(--section-gap);
 }
 
 @include bp-tablet {
@@ -59,13 +100,17 @@
   }
 
   .documents__actions {
-    flex-direction: column;
-    width: 100%;
-    max-width: 360px;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
 
-    .btn-pill {
-      width: 100%;
-      min-width: 0;
+@media (prefers-reduced-motion: reduce) {
+  .documents__actions .btn-pill {
+    transition: none;
+
+    &:hover {
+      background-position: 0% 50%;
     }
   }
 }

@@ -2,117 +2,178 @@
 
 .hero {
   position: relative;
+  z-index: 1;
   width: 100%;
-  margin: 0;
-  border-radius: var(--radius-card);
-  overflow: hidden;
-  background-color: var(--color-bg-darker);
-  background-image: url('/img/hero-mobile.webp');
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: cover;
-  aspect-ratio: 2064 / 836;
-  min-height: 280px;
+  background: #000;
 }
 
-.hero__inner {
+.hero__pin {
+  /* Высота задаётся в JS: HERO_PIN_VIEWPORT × viewport */
+  @include min-viewport-height;
+}
+
+.hero__sticky {
+  @include sticky-viewport;
+  overflow: visible;
+  background: #000;
+}
+
+.hero__canvas {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 50vw);
+  left: calc(50% - 50svw);
+  z-index: 0;
+  display: block;
+  width: 100vw;
+  width: 100svw;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+}
+
+.hero__overlay {
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 81px;
+  align-items: center;
+  box-sizing: border-box;
   height: 100%;
-  min-height: inherit;
-  padding: var(--section-padding);
+  padding: 85px var(--page-gutter) clamp(24px, 3vw, 48px);
+  pointer-events: none;
+}
+
+.hero__ball {
+  position: absolute;
+  z-index: 0;
+  inset-inline: var(--page-gutter);
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  line-height: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0.35s var(--ease-interactive);
+
+  &.is-active {
+    visibility: visible;
+  }
+}
+
+.hero__ball__img {
+  display: block;
+  width: min(312px, 100%);
+  max-width: 312px;
+  height: auto;
+  transform: translateY(32%) scale(0.85);
+  transform-origin: center bottom;
+  /* transform задаётся в JS вместе с opacity фазы 3 */
+  will-change: transform, opacity;
 }
 
 .hero__header {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
   width: 100%;
-  margin: 0;
+  text-align: center;
 }
 
-.hero__header-logo {
-  display: block;
-  height: 35px;
+.hero__logo {
+  display: inline-block;
   width: auto;
-  max-width: min(369px, 100%);
+  height: 49px;
+  max-width: 100%;
+  object-fit: contain;
 }
 
-.hero__content {
+.hero__scenes {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  flex: 1;
+  place-items: start center;
   width: 100%;
+  min-height: 0;
+  margin-top: 115px;
+
+  &:has(.hero__scene--3.is-active) {
+    box-sizing: border-box;
+    /* место под абсолютный мяч снизу, без обрезания картинки */
+    padding-bottom: min(
+      calc(312px + clamp(24px, 3vw, 48px) + 20px),
+      50vh
+    );
+  }
 }
 
-.hero__copy {
-  max-width: 592px;
+.hero__scene {
+  grid-area: 1 / 1;
   width: 100%;
-}
+  text-align: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: visibility 0.35s var(--ease-interactive);
 
-.hero__copy .hero__title,
-.hero__copy .hero__text {
-  width: 100%;
+  &.is-active {
+    visibility: visible;
+  }
+
+  &[hidden] {
+    display: none;
+  }
 }
 
 .hero__title {
-  margin: 0 0 20px;
+  margin: 0;
+  color: #fff;
+  text-align: center;
   font-family: var(--font-heading);
+  font-size: 100px;
+  font-style: normal;
   font-weight: 500;
-  font-size: 64px;
-  line-height: 1.1;
-  color: var(--color-text-light);
+  line-height: 90%;
+  letter-spacing: -1px;
   text-wrap: balance;
 }
 
-.hero__title-accent {
-  white-space: nowrap;
+.hero__scene3__copy {
+  text-align: center;
 }
 
-.hero__text {
-  margin: 0;
-  font-family: var(--font-text);
-  font-size: var(--font-size-body-lg);
-  line-height: 1.3;
-  color: rgb(246 241 241 / 88%);
-  text-wrap: pretty;
-}
-
-@include bp-desktop {
-  .hero {
-    background-image: image-set(
-      url('/img/hero.webp') 1x,
-      url('/img/hero@2x.webp') 2x
-    );
-    background-position: center right;
-  }
-}
-
-@include bp-tablet {
-  .hero__inner {
-    padding: 64px 48px;
-  }
+.hero__scene3__lead {
+  margin: 28px 0 0;
+  text-align: center;
+  text-wrap: balance;
+  @include text-lead-light;
+  color: #fff;
 }
 
 @include bp-mobile {
-  .hero {
-    aspect-ratio: auto;
-    min-height: 420px;
-  }
-
-  .hero__inner {
-    justify-content: flex-end;
-    padding: 40px 24px;
-    gap: 40px;
-  }
-
   .hero__title {
-    font-size: 32px;
+    font-size: clamp(36px, 10vw, 100px);
+    letter-spacing: -0.5px;
   }
 
-  .hero__text {
-    font-size: 16px;
+  .hero__scene3__lead {
+    font-size: clamp(16px, 4.2vw, 30px);
+    letter-spacing: 0.4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__scene {
+    transition: none;
   }
 
-  .hero__header-logo {
-    height: 28px;
+  .hero__ball {
+    transition: none;
+  }
+
+  .hero__ball__img {
+    will-change: auto;
   }
 }

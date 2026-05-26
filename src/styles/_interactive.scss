@@ -12,8 +12,18 @@
   }
 }
 
-@mixin press-scale {
-  &:active {
-    transform: scale(0.98);
+@mixin gradient-pill-hover($gradient) {
+  background-color: transparent;
+  background-image: $gradient;
+  background-repeat: no-repeat;
+  background-size: 200% 100%;
+  background-position: 0% 50%;
+
+  @include hover-only {
+    &:hover {
+      background-position: 100% 50%;
+      filter: brightness(1.06);
+      box-shadow: 0 8px 28px rgb(0 0 0 / 35%);
+    }
   }
 }
