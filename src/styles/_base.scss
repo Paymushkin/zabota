@@ -1,5 +1,6 @@
 html {
-  scroll-behavior: smooth;
+  /* auto: GSAP ScrollTrigger snap в hero конфликтует с smooth */
+  scroll-behavior: auto;
   overflow-x: clip;
   scrollbar-gutter: stable;
 }

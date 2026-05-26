@@ -1,6 +1,12 @@
 import * as defaultHeroConfig from '../data/hero.js';
+import { getHeroSnapTarget } from '../utils/hero-snap.js';
 import { loadImage, loadImageCritical } from '../utils/media-loader.js';
 import { clamp, easeInOut } from '../utils/math.js';
+import {
+  createPinScrollTrigger,
+  destroyPinScrollTrigger,
+  refreshPinScrollTriggers,
+} from '../utils/pin-scroll-trigger.js';
 import { isPinPast } from '../utils/scroll-pin.js';
 
 /**
@@ -139,6 +145,8 @@ export function initHero(heroConfig = defaultHeroConfig) {
   let scrollProgress = 0;
   let rafId = 0;
   let listenersAttached = false;
+  /** @type {ScrollTrigger | null} */
+  let heroScrollTrigger = null;
   let ready = false;
   let introOpacity = 0;
   let introStarted = false;
@@ -344,12 +352,38 @@ export function initHero(heroConfig = defaultHeroConfig) {
     render();
   };
 
-  const getScrollProgress = () => {
-    const scrollRange = Math.max(0, pin.offsetHeight - window.innerHeight);
-    if (scrollRange <= 0) {
-      return 0;
-    }
-    return clamp(-pin.getBoundingClientRect().top / scrollRange, 0, 1);
+  const readScrollProgress = () => heroScrollTrigger?.progress ?? 0;
+
+  const syncScrollProgress = () => {
+    scrollProgress = readScrollProgress();
+    prefetchByScroll(scrollProgress);
+    render();
+  };
+
+  const snapConfig = {
+    HERO_PROGRESS,
+    HERO_TEXT_FADE_IN,
+    HERO_TEXT_FADE_OUT,
+  };
+
+  const destroyScrollTrigger = () => {
+    destroyPinScrollTrigger(heroScrollTrigger);
+    heroScrollTrigger = null;
+  };
+
+  const mountScrollTrigger = () => {
+    destroyScrollTrigger();
+
+    heroScrollTrigger = createPinScrollTrigger({
+      trigger: pin,
+      reducedMotion: reducedMotion.matches,
+      snapTo: (progress) => getHeroSnapTarget(progress, snapConfig),
+      onUpdate: (progress) => {
+        scrollProgress = progress;
+        prefetchByScroll(scrollProgress);
+        render();
+      },
+    });
   };
 
   /**
@@ -400,18 +434,17 @@ export function initHero(heroConfig = defaultHeroConfig) {
     }
   };
 
-  const update = () => {
+  const refreshScroll = () => {
     syncPinHeight();
-    scrollProgress = getScrollProgress();
-    prefetchByScroll(scrollProgress);
-    render();
+    refreshPinScrollTriggers();
+    syncScrollProgress();
   };
 
   const schedule = () => {
     if (!listenersAttached) {
       return;
     }
-    update();
+    refreshScroll();
   };
 
   const stopIntroText = () => {
@@ -474,7 +507,7 @@ export function initHero(heroConfig = defaultHeroConfig) {
     }
     startIntroText();
     startLoop();
-    update();
+    syncScrollProgress();
   };
 
   const markPosterReady = (img) => {
@@ -483,7 +516,7 @@ export function initHero(heroConfig = defaultHeroConfig) {
     drawCoverImage(img);
     startIntroText();
     startLoop();
-    update();
+    syncScrollProgress();
   };
 
   const bootstrap = async () => {
@@ -515,10 +548,10 @@ export function initHero(heroConfig = defaultHeroConfig) {
     if (listenersAttached) {
       return;
     }
-    window.addEventListener('scroll', schedule, { passive: true });
     window.addEventListener('resize', schedule, { passive: true });
     listenersAttached = true;
     syncPinHeight();
+    mountScrollTrigger();
     drawBlack();
     applyTextOpacity();
     void bootstrap();
@@ -528,8 +561,8 @@ export function initHero(heroConfig = defaultHeroConfig) {
     if (!listenersAttached) {
       return;
     }
-    window.removeEventListener('scroll', schedule);
     window.removeEventListener('resize', schedule);
+    destroyScrollTrigger();
     stopLoop();
     stopIntroText();
     listenersAttached = false;
@@ -547,6 +580,11 @@ export function initHero(heroConfig = defaultHeroConfig) {
   };
 
   const applyMotionMode = () => {
+    if (listenersAttached) {
+      mountScrollTrigger();
+      refreshScroll();
+    }
+
     if (reducedMotion.matches) {
       stopLoop();
       stopIntroText();

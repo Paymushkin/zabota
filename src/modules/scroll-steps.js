@@ -1,6 +1,12 @@
 import { renderScrollStepsCardsHtml } from '../render/scroll-steps.js';
 import { clamp, easeInOut, lerp } from '../utils/math.js';
-import { createRafScrollLoop, getPinScrollProgress, isPinPast } from '../utils/scroll-pin.js';
+import {
+  createPinScrollTrigger,
+  destroyPinScrollTrigger,
+  refreshPinScrollTriggers,
+} from '../utils/pin-scroll-trigger.js';
+import { isPinPast } from '../utils/scroll-pin.js';
+import { getScrollStepsSnapTarget } from '../utils/scroll-steps-snap.js';
 
 const STEP_COUNT = 3;
 const TRANSITION_COUNT = STEP_COUNT - 1;
@@ -147,6 +153,10 @@ export function initScrollSteps() {
 
   const section = pin.closest('.scroll-steps');
   const desktopMq = window.matchMedia(DESKTOP_MQ);
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  /** @type {import('gsap/ScrollTrigger').ScrollTrigger | null} */
+  let pinScrollTrigger = null;
+  let resizeAttached = false;
 
   const syncLayout = () => {
     const card = cards[0];
@@ -165,8 +175,6 @@ export function initScrollSteps() {
     section?.style.removeProperty('min-height');
   };
 
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-
   const applyPastPinFrame = () => {
     cards.forEach((card, index) => {
       if (index === STEP_COUNT - 1) {
@@ -177,23 +185,59 @@ export function initScrollSteps() {
     });
   };
 
-  const { schedule, attach, detach } = createRafScrollLoop(() => {
-    syncLayout();
-
+  const handleProgress = (progress) => {
     if (isPinPast(pin)) {
       applyPastPinFrame();
       return;
     }
 
-    applyScrollStepsFrame(cards, getPinScrollProgress(pin));
-  });
+    applyScrollStepsFrame(cards, progress);
+  };
+
+  const refreshScroll = () => {
+    syncLayout();
+    refreshPinScrollTriggers();
+    handleProgress(pinScrollTrigger?.progress ?? 0);
+  };
+
+  const onResize = () => {
+    refreshScroll();
+  };
+
+  const mountScrollTrigger = () => {
+    destroyPinScrollTrigger(pinScrollTrigger);
+    syncLayout();
+    pinScrollTrigger = createPinScrollTrigger({
+      trigger: pin,
+      reducedMotion: reducedMotion.matches,
+      snapTo: getScrollStepsSnapTarget,
+      onUpdate: handleProgress,
+    });
+  };
+
+  const attachScroll = () => {
+    mountScrollTrigger();
+    if (!resizeAttached) {
+      window.addEventListener('resize', onResize, { passive: true });
+      resizeAttached = true;
+    }
+  };
+
+  const detachScroll = () => {
+    destroyPinScrollTrigger(pinScrollTrigger);
+    pinScrollTrigger = null;
+    if (resizeAttached) {
+      window.removeEventListener('resize', onResize);
+      resizeAttached = false;
+    }
+  };
 
   cards.forEach((card) => {
-    card.querySelector('img')?.addEventListener('load', schedule, { once: true });
+    card.querySelector('img')?.addEventListener('load', refreshScroll, { once: true });
   });
 
   const detachAll = () => {
-    detach();
+    detachScroll();
     cards.forEach(clearCardStyles);
     deck.style.removeProperty('min-height');
     pin.style.removeProperty('height');
@@ -203,12 +247,18 @@ export function initScrollSteps() {
   const applyMode = () => {
     if (reducedMotion.matches) {
       detachAll();
+      applyPastPinFrame();
     } else {
-      attach();
+      attachScroll();
     }
   };
 
   reducedMotion.addEventListener('change', applyMode);
-  desktopMq.addEventListener('change', schedule);
+  desktopMq.addEventListener('change', () => {
+    if (!reducedMotion.matches) {
+      mountScrollTrigger();
+      refreshScroll();
+    }
+  });
   applyMode();
 }

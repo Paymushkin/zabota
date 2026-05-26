@@ -1,0 +1,155 @@
+@use '../mixins' as *;
+
+/* test2: полосы и затемнение фото плавно меняются по скроллу (--glitch-heal 0→1) */
+
+.hero--glitch {
+  --glitch-stripe-opacity: 0.88;
+  --photo-opacity: 1;
+  --photo-dim: 0.06;
+  --scan-opacity: 0.5;
+
+  .hero-glitch__bg {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(50% - 50vw);
+    left: calc(50% - 50svw);
+    z-index: 0;
+    width: 100vw;
+    width: 100svw;
+    height: 100%;
+    overflow: hidden;
+    background: #000;
+  }
+
+  .hero-glitch__photo {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    opacity: var(--photo-opacity, 0);
+    object-fit: cover;
+    object-position: center;
+    pointer-events: none;
+    transition: opacity 0.12s linear;
+  }
+
+  .hero-glitch__bg::after {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: rgb(0 0 0 / var(--photo-dim, 0));
+    pointer-events: none;
+    content: '';
+    transition: background 0.12s linear;
+  }
+
+  .hero-glitch__fx {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .hero-glitch__stripes {
+    position: absolute;
+    top: 0;
+    right: 22%;
+    bottom: 0;
+    left: 0;
+    opacity: var(--glitch-stripe-opacity, 0);
+    pointer-events: none;
+    transition: opacity 0.12s linear;
+  }
+
+  .hero-glitch__stripe {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    transform: translateX(-50%);
+    mix-blend-mode: screen;
+    will-change: opacity;
+  }
+
+  .hero-glitch__stripe--static {
+    opacity: calc(var(--stripe-static-base, 0.35) * var(--stripe-visibility, 1) * var(--stripe-soften, 1));
+  }
+
+  .hero-glitch__stripe--blink {
+    opacity: calc(var(--stripe-off-active, var(--stripe-off, 0.1)) * var(--stripe-visibility, 1));
+    animation: hero-glitch-stripe-blink var(--stripe-duration, 0.6s) steps(2) infinite;
+    animation-delay: var(--stripe-delay, 0s);
+  }
+
+  .hero-glitch__scan--bottom {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 14%;
+    opacity: var(--scan-opacity, 0);
+    background: linear-gradient(
+      0deg,
+      rgb(255 255 255 / 0.95) 0%,
+      rgb(180 230 255 / 0.75) 35%,
+      #0000 100%
+    );
+    clip-path: polygon(
+      0% 100%,
+      4% 72%,
+      11% 88%,
+      19% 58%,
+      28% 80%,
+      37% 52%,
+      46% 76%,
+      55% 48%,
+      64% 70%,
+      73% 55%,
+      82% 78%,
+      91% 60%,
+      100% 85%,
+      100% 100%
+    );
+    transition: opacity 0.12s linear;
+  }
+
+  &[data-glitch-active] {
+    .hero-glitch__fx {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    .hero__dim {
+      background: rgb(0 0 0 / calc(10% + var(--photo-dim, 0) * 35%));
+    }
+  }
+}
+
+@keyframes hero-glitch-stripe-blink {
+  0%,
+  46% {
+    opacity: calc(var(--stripe-on-active, var(--stripe-on, 0.5)) * var(--stripe-visibility, 1));
+  }
+
+  47%,
+  100% {
+    opacity: calc(var(--stripe-off-active, var(--stripe-off, 0.08)) * var(--stripe-visibility, 1));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero--glitch {
+    .hero-glitch__fx {
+      visibility: hidden !important;
+      opacity: 0 !important;
+    }
+
+    .hero-glitch__stripe--blink {
+      animation: none !important;
+    }
+  }
+}

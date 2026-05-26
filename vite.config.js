@@ -46,6 +46,7 @@ export default defineConfig({
       input: {
         main: path.resolve(root, 'index.html'),
         test: path.resolve(root, 'test.html'),
+        test2: path.resolve(root, 'test2.html'),
       },
       output: {
         assetFileNames: 'assets/[name]-[hash][extname]',

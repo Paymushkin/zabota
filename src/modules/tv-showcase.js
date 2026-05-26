@@ -6,7 +6,13 @@ import {
   TV_SHOWCASE_VIDEO_SRC,
 } from '../data/tv-showcase.js';
 import { lerp, segmentT } from '../utils/math.js';
-import { createRafScrollLoop, getPinScrollProgress, isPinPast } from '../utils/scroll-pin.js';
+import {
+  createPinScrollTrigger,
+  destroyPinScrollTrigger,
+  refreshPinScrollTriggers,
+} from '../utils/pin-scroll-trigger.js';
+import { isPinPast } from '../utils/scroll-pin.js';
+import { getTvShowcaseSnapTarget } from '../utils/tv-showcase-snap.js';
 
 const PEEK_VISIBLE_RATIO = 0.5;
 const VIDEO_END_EPS = 0.05;
@@ -220,22 +226,21 @@ export function initTvShowcase() {
   ensureVideoSource(video);
 
   const prefetchVideo = createVideoPrefetch(video);
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  /** @type {import('gsap/ScrollTrigger').ScrollTrigger | null} */
+  let pinScrollTrigger = null;
+  let resizeAttached = false;
 
   const syncLayout = () => {
     pin.style.height = `${TV_SHOWCASE_PIN_VIEWPORT * window.innerHeight}px`;
   };
-
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  video.addEventListener('ended', () => parkVideoOnLastFrame(video));
 
   const applyFinalFrame = () => {
     prefetchVideo();
     applyTvShowcaseFrame(stage, media, img1, img2, videoWrap, video, 1, prefetchVideo);
   };
 
-  const { schedule, attach, detach } = createRafScrollLoop(() => {
-    syncLayout();
-
+  const handleProgress = (progress) => {
     if (isPinPast(pin)) {
       applyFinalFrame();
       parkVideoOnLastFrame(video);
@@ -249,12 +254,52 @@ export function initTvShowcase() {
       img2,
       videoWrap,
       video,
-      getPinScrollProgress(pin),
+      progress,
       prefetchVideo,
     );
-  });
+  };
 
-  const onMediaReady = () => schedule();
+  const refreshScroll = () => {
+    syncLayout();
+    refreshPinScrollTriggers();
+    handleProgress(pinScrollTrigger?.progress ?? 0);
+  };
+
+  const onResize = () => {
+    refreshScroll();
+  };
+
+  const mountScrollTrigger = () => {
+    destroyPinScrollTrigger(pinScrollTrigger);
+    syncLayout();
+    pinScrollTrigger = createPinScrollTrigger({
+      trigger: pin,
+      reducedMotion: reducedMotion.matches,
+      snapTo: (progress) => getTvShowcaseSnapTarget(progress, TV_SHOWCASE_PROGRESS),
+      onUpdate: handleProgress,
+    });
+  };
+
+  const attachScroll = () => {
+    mountScrollTrigger();
+    if (!resizeAttached) {
+      window.addEventListener('resize', onResize, { passive: true });
+      resizeAttached = true;
+    }
+  };
+
+  const detachScroll = () => {
+    destroyPinScrollTrigger(pinScrollTrigger);
+    pinScrollTrigger = null;
+    if (resizeAttached) {
+      window.removeEventListener('resize', onResize);
+      resizeAttached = false;
+    }
+  };
+
+  video.addEventListener('ended', () => parkVideoOnLastFrame(video));
+
+  const onMediaReady = () => refreshScroll();
 
   img1.addEventListener('load', onMediaReady, { once: true });
   img2.addEventListener('load', onMediaReady, { once: true });
@@ -262,7 +307,7 @@ export function initTvShowcase() {
   video.addEventListener('canplay', onMediaReady);
 
   const detachAll = () => {
-    detach();
+    detachScroll();
     video.pause();
     clearTvShowcaseStyles(stage, img1, img2, videoWrap);
     pin.style.removeProperty('height');
@@ -279,7 +324,7 @@ export function initTvShowcase() {
         });
       }
     } else {
-      attach();
+      attachScroll();
     }
   };
 
