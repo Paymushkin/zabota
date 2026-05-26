@@ -14,7 +14,9 @@
 
 .hero__sticky {
   @include sticky-viewport;
+  z-index: 0;
   overflow: visible;
+  isolation: isolate;
   background: #000;
 }
 
@@ -44,6 +46,7 @@
 .hero__overlay {
   position: relative;
   z-index: 2;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -56,7 +59,7 @@
 
 .hero__ball {
   position: absolute;
-  z-index: 0;
+  z-index: 1;
   inset-inline: var(--page-gutter);
   bottom: 0;
   display: flex;
@@ -71,12 +74,13 @@
     visibility: visible;
   }
 
-  /* Общий слой с benefits: мяч под заголовком, виден по краям */
+  /* Мяч под текстом hero и под заголовком benefits */
   &.hero__ball--overlap {
     position: fixed;
-    z-index: 2;
+    z-index: 5;
     inset-inline: 0;
     padding-inline: var(--page-gutter);
+    transform: translateZ(0);
   }
 }
 
@@ -89,6 +93,10 @@
   transform-origin: center bottom;
   /* transform задаётся в JS вместе с opacity фазы 3 */
   backface-visibility: hidden;
+}
+
+.hero__ball--overlap .hero__ball__img {
+  transform: translate3d(0, 32%, 0) scale(1);
 }
 
 .hero__header {

@@ -7,6 +7,7 @@ import {
   destroyPinScrollTrigger,
   refreshPinScrollTriggers,
 } from '../utils/pin-scroll-trigger.js';
+import { resetHeroBallOverlap, shouldHeroBallOverlap } from '../utils/hero-ball-overlap.js';
 import { isPinPast } from '../utils/scroll-pin.js';
 
 /**
@@ -120,6 +121,7 @@ export function initHero(heroConfig = defaultHeroConfig) {
   };
 
   const pin = document.querySelector('[data-hero-pin]');
+  const heroSection = pin?.closest('.hero');
   const canvas = document.querySelector('[data-hero-canvas]');
   const phase3Ball = document.querySelector('[data-hero-ball]');
   const phase3BallImg = phase3Ball?.querySelector('.hero__ball__img');
@@ -266,17 +268,19 @@ export function initHero(heroConfig = defaultHeroConfig) {
       const ballVisible = opacity > 0.02;
       phase3Ball.style.opacity = String(opacity);
       phase3Ball.classList.toggle('is-active', ballVisible);
-      const benefitsOverlap =
-        Boolean(benefitsHeader) &&
-        benefitsHeader.getBoundingClientRect().top < window.innerHeight * 0.92;
-      const overlapActive = ballVisible && benefitsOverlap && !isPinPast(pin);
+      const overlapActive = shouldHeroBallOverlap(benefitsHeader, pin, ballVisible);
       phase3Ball.classList.toggle('hero__ball--overlap', overlapActive);
       benefitsHeader?.classList.toggle('benefits__header--overlap', overlapActive);
+      heroSection?.classList.toggle('hero--ball-overlap', overlapActive);
       phase3Ball.setAttribute('aria-hidden', ballVisible ? 'false' : 'true');
 
       if (phase3BallImg) {
-        const scale = reducedMotion.matches ? 1 : 0.85 + opacity * 0.15;
-        phase3BallImg.style.transform = `translate3d(0, 32%, 0) scale(${scale})`;
+        if (overlapActive) {
+          phase3BallImg.style.removeProperty('transform');
+        } else {
+          const scale = reducedMotion.matches ? 1 : 0.85 + opacity * 0.15;
+          phase3BallImg.style.transform = `translate3d(0, 32%, 0) scale(${scale})`;
+        }
       }
     }
   };
@@ -577,6 +581,8 @@ export function initHero(heroConfig = defaultHeroConfig) {
     }
     delete sheets.loop1;
     delete sheetLoads.loop1;
+    resetHeroBallOverlap();
+    heroSection?.classList.remove('hero--ball-overlap');
   };
 
   const applyMotionMode = () => {

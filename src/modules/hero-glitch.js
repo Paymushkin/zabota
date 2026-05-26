@@ -15,6 +15,7 @@ import {
   refreshPinScrollTriggers,
 } from '../utils/pin-scroll-trigger.js';
 import { buildHeroGlitchStripes } from '../utils/hero-glitch-stripes.js';
+import { resetHeroBallOverlap, shouldHeroBallOverlap } from '../utils/hero-ball-overlap.js';
 import { isPinPast } from '../utils/scroll-pin.js';
 
 export function initHeroGlitch() {
@@ -180,17 +181,19 @@ export function initHeroGlitch() {
       const ballVisible = opacity > 0.02;
       phase3Ball.style.opacity = String(opacity);
       phase3Ball.classList.toggle('is-active', ballVisible);
-      const benefitsOverlap =
-        Boolean(benefitsHeader) &&
-        benefitsHeader.getBoundingClientRect().top < window.innerHeight * 0.92;
-      const overlapActive = ballVisible && benefitsOverlap && !isPinPast(pin);
+      const overlapActive = shouldHeroBallOverlap(benefitsHeader, pin, ballVisible);
       phase3Ball.classList.toggle('hero__ball--overlap', overlapActive);
       benefitsHeader?.classList.toggle('benefits__header--overlap', overlapActive);
+      section.classList.toggle('hero--ball-overlap', overlapActive);
       phase3Ball.setAttribute('aria-hidden', ballVisible ? 'false' : 'true');
 
       if (phase3BallImg) {
-        const scale = reducedMotion.matches ? 1 : 0.85 + opacity * 0.15;
-        phase3BallImg.style.transform = `translate3d(0, 32%, 0) scale(${scale})`;
+        if (overlapActive) {
+          phase3BallImg.style.removeProperty('transform');
+        } else {
+          const scale = reducedMotion.matches ? 1 : 0.85 + opacity * 0.15;
+          phase3BallImg.style.transform = `translate3d(0, 32%, 0) scale(${scale})`;
+        }
       }
     }
   };
@@ -294,6 +297,8 @@ export function initHeroGlitch() {
     section.style.removeProperty('--photo-dim');
     section.style.removeProperty('--photo-opacity');
     section.style.removeProperty('--scan-opacity');
+    resetHeroBallOverlap();
+    section.classList.remove('hero--ball-overlap');
   };
 
   const applyMotionMode = () => {

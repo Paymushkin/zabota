@@ -2,7 +2,8 @@
 
 .benefits {
   position: relative;
-  z-index: 3;
+  z-index: 10;
+  isolation: isolate;
   padding: 0 0 115px;
   color: #fff;
   background: transparent;
@@ -16,7 +17,7 @@
 
 .benefits__header {
   position: relative;
-  z-index: 4;
+  z-index: 2;
   margin: 0 0 60px;
   text-align: center;
   pointer-events: none;
@@ -25,9 +26,11 @@
     position: fixed;
     inset-inline: 0;
     bottom: clamp(88px, 13vh, 132px);
-    z-index: 4;
+    z-index: 20;
     margin: 0;
     padding-inline: var(--page-gutter);
+    transform: translateZ(0);
+    isolation: isolate;
   }
 }
 
@@ -58,7 +61,7 @@
 
 .benefits__list {
   position: relative;
-  z-index: 3;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(2, max-content);
   justify-content: center;
