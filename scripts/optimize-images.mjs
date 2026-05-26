@@ -15,6 +15,11 @@ const SRC_VARIANTS = {
   'step-3.png': { width: 1160, quality: 88 },
 };
 
+/** PNG из img/ → public/hero/*.webp */
+const HERO_STATIC_VARIANTS = {
+  'hero-bg.png': { width: 1920, quality: 82 },
+};
+
 /** PNG уже в public/img → webp, исходник удаляется */
 const PUBLIC_VARIANTS = {
   'ball.png': { width: 624, quality: 90 },
@@ -120,6 +125,27 @@ async function optimizeStatic() {
   }
 }
 
+async function optimizeHeroStatic() {
+  let converted = 0;
+
+  for (const [file, opts] of Object.entries(HERO_STATIC_VARIANTS)) {
+    const input = join(SRC_DIR, file);
+    if (!(await pathExists(input))) {
+      continue;
+    }
+
+    const { name } = parse(file);
+    const output = join(HERO_DIR, `${name}.webp`);
+    await pngToWebp(input, output, opts);
+    console.log(`  ${name}.webp → public/hero/`);
+    converted += 1;
+  }
+
+  if (converted > 0) {
+    console.log(`Hero static: ${converted} image(s) → webp`);
+  }
+}
+
 async function optimizeHeroFrames() {
   const sequences = await readdir(HERO_DIR, { withFileTypes: true });
   let converted = 0;
@@ -150,6 +176,8 @@ async function optimize() {
   await copyFonts();
   console.log('Static images:');
   await optimizeStatic();
+  console.log('Hero static:');
+  await optimizeHeroStatic();
   console.log('Hero sequences:');
   await optimizeHeroFrames();
   console.log('Done.');

@@ -30,7 +30,7 @@ export function initHeroGlitch() {
   const pin = document.querySelector('[data-hero-pin]');
 
   if (photo) {
-    photo.src = `${import.meta.env.BASE_URL}hero/hero-2/hero-2-120.webp`;
+    photo.src = `${import.meta.env.BASE_URL}hero/hero-bg.webp`;
   }
 
   if (stripesField) {
