@@ -1,5 +1,6 @@
 import * as defaultHeroConfig from '../data/hero.js';
 import { getHeroSnapTarget } from '../utils/hero-snap.js';
+import { getHeroTextOpacities } from '../utils/hero-text-opacity.js';
 import { loadImage, loadImageCritical } from '../utils/media-loader.js';
 import { clamp, easeInOut } from '../utils/math.js';
 import {
@@ -67,37 +68,10 @@ export function initHero(heroConfig = defaultHeroConfig) {
     return { mode: 'black' };
   };
 
-  const sceneOpacity = (progress, fadeInStart, fadeOutStart) => {
-    const p = clamp(progress, 0, 1);
-    const fadeInEnd = fadeInStart + HERO_TEXT_FADE_IN;
-    const fadeOutEnd = fadeOutStart + HERO_TEXT_FADE_OUT;
-
-    if (p < fadeInStart) {
-      return 0;
-    }
-    if (p < fadeInEnd) {
-      return easeInOut((p - fadeInStart) / HERO_TEXT_FADE_IN);
-    }
-    if (p < fadeOutStart) {
-      return 1;
-    }
-    if (p < fadeOutEnd) {
-      return 1 - easeInOut((p - fadeOutStart) / HERO_TEXT_FADE_OUT);
-    }
-    return 0;
-  };
-
-  const sceneFadeOutOnly = (progress, fadeOutStart) => {
-    const p = clamp(progress, 0, 1);
-    const fadeOutEnd = fadeOutStart + HERO_TEXT_FADE_OUT;
-
-    if (p < fadeOutStart) {
-      return 1;
-    }
-    if (p < fadeOutEnd) {
-      return 1 - easeInOut((p - fadeOutStart) / HERO_TEXT_FADE_OUT);
-    }
-    return 0;
+  const textOpacityConfig = {
+    HERO_PROGRESS,
+    HERO_TEXT_FADE_IN,
+    HERO_TEXT_FADE_OUT,
   };
 
   const getBallOpacity = (progress) => {
@@ -112,16 +86,6 @@ export function initHero(heroConfig = defaultHeroConfig) {
       return easeInOut((p - transfer23End) / HERO_BALL_FADE_IN);
     }
     return 1;
-  };
-
-  const getTextOpacity = (progress, introOpacity) => {
-    const { loop1End, transfer12End, loop2End, transfer23End } = HERO_PROGRESS;
-
-    return {
-      scene1: introOpacity * sceneFadeOutOnly(progress, loop1End),
-      scene2: sceneOpacity(progress, transfer12End, loop2End),
-      scene3: sceneOpacity(progress, transfer23End, 1),
-    };
   };
 
   const pin = document.querySelector('[data-hero-pin]');
@@ -258,7 +222,7 @@ export function initHero(heroConfig = defaultHeroConfig) {
   };
 
   const applyTextOpacity = () => {
-    const opacities = getTextOpacity(scrollProgress, introOpacity);
+    const opacities = getHeroTextOpacities(scrollProgress, introOpacity, textOpacityConfig);
     scenes.forEach((scene) => {
       const id = scene.dataset.heroScene;
       const opacity = opacities[`scene${id}`] ?? 0;

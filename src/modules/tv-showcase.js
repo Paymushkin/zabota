@@ -153,8 +153,20 @@ function setLayerOpacity(element, opacity) {
  * @param {HTMLVideoElement} video
  * @param {number} progress
  * @param {() => void} prefetchVideo
+ * @param {boolean} videoActivated
+ * @returns {boolean} updated videoActivated
  */
-function applyTvShowcaseFrame(stage, media, img1, img2, videoWrap, video, progress, prefetchVideo) {
+function applyTvShowcaseFrame(
+  stage,
+  media,
+  img1,
+  img2,
+  videoWrap,
+  video,
+  progress,
+  prefetchVideo,
+  videoActivated,
+) {
   const {
     crossfadeStart,
     crossfadeEnd,
@@ -177,27 +189,44 @@ function applyTvShowcaseFrame(stage, media, img1, img2, videoWrap, video, progre
   }
 
   const wantsVideo = progress >= videoStart;
-  const showVideo = wantsVideo && isVideoReadyToShow(video);
+  const VIDEO_DEACTIVATE_EPS = 0.03; // гистерезис: не возвращаемся к картинкам на микропрыжках progress
+
+  let videoActivatedLocal = videoActivated;
+  const isReady = isVideoReadyToShow(video);
+
+  // Активируем видео только после первого момента, когда оно действительно готово.
+  if (!videoActivatedLocal && wantsVideo && isReady) {
+    videoActivatedLocal = true;
+  }
+
+  // Если пользователь уходит назад достаточно далеко — можно снова переключаться на картинки.
+  if (videoActivatedLocal && !wantsVideo && progress < videoStart - VIDEO_DEACTIVATE_EPS) {
+    videoActivatedLocal = false;
+  }
+
+  const wantsVideoEffective = wantsVideo || videoActivatedLocal;
+  const showVideo = wantsVideoEffective && isReady;
 
   if (showVideo) {
     setLayerOpacity(img1, 0);
     setLayerOpacity(img2, 0);
     setLayerOpacity(videoWrap, 1);
     syncVideoPlayback(video, true);
-    return;
+    return videoActivatedLocal;
   }
 
   setLayerOpacity(videoWrap, 0);
   syncVideoPlayback(video, false);
 
-  if (wantsVideo) {
+  if (wantsVideoEffective) {
     setLayerOpacity(img1, 0);
     setLayerOpacity(img2, 1);
-    return;
+    return videoActivatedLocal;
   }
 
   setLayerOpacity(img1, 1 - crossfadeT);
   setLayerOpacity(img2, crossfadeT);
+  return videoActivatedLocal;
 }
 
 function clearTvShowcaseStyles(stage, img1, img2, videoWrap) {
@@ -230,6 +259,7 @@ export function initTvShowcase() {
   /** @type {import('gsap/ScrollTrigger').ScrollTrigger | null} */
   let pinScrollTrigger = null;
   let resizeAttached = false;
+  let videoActivated = false;
 
   const syncLayout = () => {
     pin.style.height = `${TV_SHOWCASE_PIN_VIEWPORT * window.innerHeight}px`;
@@ -237,7 +267,17 @@ export function initTvShowcase() {
 
   const applyFinalFrame = () => {
     prefetchVideo();
-    applyTvShowcaseFrame(stage, media, img1, img2, videoWrap, video, 1, prefetchVideo);
+    videoActivated = applyTvShowcaseFrame(
+      stage,
+      media,
+      img1,
+      img2,
+      videoWrap,
+      video,
+      1,
+      prefetchVideo,
+      videoActivated,
+    );
   };
 
   const handleProgress = (progress) => {
@@ -247,7 +287,7 @@ export function initTvShowcase() {
       return;
     }
 
-    applyTvShowcaseFrame(
+    videoActivated = applyTvShowcaseFrame(
       stage,
       media,
       img1,
@@ -256,6 +296,7 @@ export function initTvShowcase() {
       video,
       progress,
       prefetchVideo,
+      videoActivated,
     );
   };
 
