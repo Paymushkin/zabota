@@ -15,7 +15,11 @@ import {
   refreshPinScrollTriggers,
 } from '../utils/pin-scroll-trigger.js';
 import { buildHeroGlitchStripes } from '../utils/hero-glitch-stripes.js';
-import { resetHeroBallOverlap, shouldHeroBallOverlap } from '../utils/hero-ball-overlap.js';
+import {
+  resetHeroBallOverlap,
+  scheduleHeroBallLayoutStabilization,
+  shouldHeroBallOverlap,
+} from '../utils/hero-ball-overlap.js';
 import { isPinPast } from '../utils/scroll-pin.js';
 
 export function initHeroGlitch() {
@@ -276,6 +280,7 @@ export function initHeroGlitch() {
     mountScrollTrigger();
     section.toggleAttribute('data-glitch-active', true);
     applyTextOpacity();
+    scheduleHeroBallLayoutStabilization(refreshScroll);
     startIntroText();
     render();
   };

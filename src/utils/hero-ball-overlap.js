@@ -1,6 +1,7 @@
 import { isPinPast } from './scroll-pin.js';
 
 let overlapEngaged = false;
+let layoutStabilized = false;
 
 const OVERLAP_ON_RATIO = 0.88;
 const OVERLAP_OFF_RATIO = 0.94;
@@ -13,14 +14,28 @@ const OVERLAP_OFF_RATIO = 0.94;
  * @param {boolean} ballVisible
  */
 export function shouldHeroBallOverlap(benefitsHeader, pin, ballVisible) {
-  if (!ballVisible || !benefitsHeader || isPinPast(pin)) {
-    overlapEngaged = false;
+  if (!layoutStabilized || !ballVisible || !benefitsHeader || isPinPast(pin)) {
+    if (!ballVisible || isPinPast(pin)) {
+      overlapEngaged = false;
+    }
     return false;
   }
 
-  const top = benefitsHeader.getBoundingClientRect().top;
-  const on = window.innerHeight * OVERLAP_ON_RATIO;
-  const off = window.innerHeight * OVERLAP_OFF_RATIO;
+  const rect = benefitsHeader.getBoundingClientRect();
+  if (rect.height < 1) {
+    return false;
+  }
+
+  const vh = window.innerHeight;
+  const top = rect.top;
+
+  // До первого входа заголовка в зону overlap не включаем (Safari 17 иногда отдаёт top≈0).
+  if (!overlapEngaged && top >= vh * OVERLAP_OFF_RATIO) {
+    return false;
+  }
+
+  const on = vh * OVERLAP_ON_RATIO;
+  const off = vh * OVERLAP_OFF_RATIO;
 
   if (!overlapEngaged && top < on) {
     overlapEngaged = true;
@@ -33,4 +48,33 @@ export function shouldHeroBallOverlap(benefitsHeader, pin, ballVisible) {
 
 export function resetHeroBallOverlap() {
   overlapEngaged = false;
+}
+
+function markHeroBallLayoutStabilized() {
+  layoutStabilized = true;
+}
+
+/**
+ * После первого стабильного layout (rAF ×2, fonts, load) пересчитывает overlap и pin.
+ *
+ * @param {() => void} onStabilize
+ */
+export function scheduleHeroBallLayoutStabilization(onStabilize) {
+  const run = () => {
+    markHeroBallLayoutStabilized();
+    resetHeroBallOverlap();
+    onStabilize();
+  };
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(run);
+  });
+
+  document.fonts?.ready.then(run);
+
+  if (document.readyState === 'complete') {
+    run();
+  } else {
+    window.addEventListener('load', run, { once: true });
+  }
 }

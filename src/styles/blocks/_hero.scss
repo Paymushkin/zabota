@@ -47,6 +47,7 @@
   position: relative;
   z-index: 2;
   isolation: isolate;
+  transform: translateZ(0);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -59,7 +60,7 @@
 
 .hero__ball {
   position: absolute;
-  z-index: 1;
+  z-index: 0;
   inset-inline: var(--page-gutter);
   bottom: 0;
   display: flex;

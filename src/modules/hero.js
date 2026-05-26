@@ -7,7 +7,11 @@ import {
   destroyPinScrollTrigger,
   refreshPinScrollTriggers,
 } from '../utils/pin-scroll-trigger.js';
-import { resetHeroBallOverlap, shouldHeroBallOverlap } from '../utils/hero-ball-overlap.js';
+import {
+  resetHeroBallOverlap,
+  scheduleHeroBallLayoutStabilization,
+  shouldHeroBallOverlap,
+} from '../utils/hero-ball-overlap.js';
 import { isPinPast } from '../utils/scroll-pin.js';
 
 /**
@@ -442,6 +446,7 @@ export function initHero(heroConfig = defaultHeroConfig) {
     syncPinHeight();
     refreshPinScrollTriggers();
     syncScrollProgress();
+    applyTextOpacity();
   };
 
   const schedule = () => {
@@ -558,6 +563,7 @@ export function initHero(heroConfig = defaultHeroConfig) {
     mountScrollTrigger();
     drawBlack();
     applyTextOpacity();
+    scheduleHeroBallLayoutStabilization(refreshScroll);
     void bootstrap();
   };
 
