@@ -1,132 +1,118 @@
-import {
-  HERO_LOOP_FPS,
-  HERO_PIN_VIEWPORT,
-  HERO_PROGRESS,
-  HERO_SEQUENCES,
-  HERO_BALL_FADE_IN,
-  HERO_INTRO_TEXT_DELAY_MS,
-  HERO_INTRO_TEXT_FADE_MS,
-  HERO_TEXT_FADE_IN,
-  HERO_TEXT_FADE_OUT,
-} from '../data/hero.js';
+import * as defaultHeroConfig from '../data/hero.js';
 import { loadImage, loadImageCritical } from '../utils/media-loader.js';
 import { clamp, easeInOut } from '../utils/math.js';
 import { isPinPast } from '../utils/scroll-pin.js';
 
-/** @type {readonly (keyof typeof HERO_SEQUENCES)[]} */
-const DEFERRED_SHEET_KEYS = ['transfer12', 'loop2', 'transfer23'];
-
-const SCROLL_PREFETCH = {
-  transfer12: 0.14,
-  loop2: 0.28,
-  transfer23: 0.48,
-};
-
 /**
+ * @typedef {typeof defaultHeroConfig} HeroConfig
  * @typedef {{ cols: number; rows: number; frameWidth: number; frameHeight: number; count: number }} SpriteMeta
  * @typedef {{ image: HTMLImageElement; meta: SpriteMeta }} HeroSheet
  */
 
-/**
- * @param {{ path: string }} spec
- */
-function sheetBaseUrl(spec) {
-  return `${import.meta.env.BASE_URL}${spec.path}`;
-}
+/** @param {HeroConfig} [heroConfig] */
+export function initHero(heroConfig = defaultHeroConfig) {
+  const {
+    HERO_LOOP_FPS,
+    HERO_PIN_VIEWPORT,
+    HERO_PROGRESS,
+    HERO_SEQUENCES,
+    HERO_BALL_FADE_IN,
+    HERO_INTRO_TEXT_DELAY_MS,
+    HERO_INTRO_TEXT_FADE_MS,
+    HERO_TEXT_FADE_IN,
+    HERO_TEXT_FADE_OUT,
+  } = heroConfig;
 
-/**
- * @param {number} progress
- */
-function getMediaState(progress) {
-  const p = clamp(progress, 0, 1);
-  const { loop1End, transfer12End, loop2End, transfer23End } = HERO_PROGRESS;
+  /** @type {readonly (keyof typeof HERO_SEQUENCES)[]} */
+  const DEFERRED_SHEET_KEYS = ['transfer12', 'loop2', 'transfer23'];
 
-  if (p < loop1End) {
-    return { mode: 'loop1' };
-  }
-  if (p < transfer12End) {
-    const t = (p - loop1End) / (transfer12End - loop1End);
-    return { mode: 'transfer12', healT: clamp(t, 0, 1) };
-  }
-  if (p < loop2End) {
-    return { mode: 'loop2' };
-  }
-  if (p < transfer23End) {
-    const t = (p - loop2End) / (transfer23End - loop2End);
-    return { mode: 'transfer23', healT: clamp(t, 0, 1) };
-  }
-  return { mode: 'black' };
-}
-
-/**
- * @param {number} progress
- * @param {number} fadeInStart
- * @param {number} fadeOutStart
- */
-function sceneOpacity(progress, fadeInStart, fadeOutStart) {
-  const p = clamp(progress, 0, 1);
-  const fadeInEnd = fadeInStart + HERO_TEXT_FADE_IN;
-  const fadeOutEnd = fadeOutStart + HERO_TEXT_FADE_OUT;
-
-  if (p < fadeInStart) {
-    return 0;
-  }
-  if (p < fadeInEnd) {
-    return easeInOut((p - fadeInStart) / HERO_TEXT_FADE_IN);
-  }
-  if (p < fadeOutStart) {
-    return 1;
-  }
-  if (p < fadeOutEnd) {
-    return 1 - easeInOut((p - fadeOutStart) / HERO_TEXT_FADE_OUT);
-  }
-  return 0;
-}
-
-/** Скрытие по скроллу (без fade-in в начале pin). */
-function sceneFadeOutOnly(progress, fadeOutStart) {
-  const p = clamp(progress, 0, 1);
-  const fadeOutEnd = fadeOutStart + HERO_TEXT_FADE_OUT;
-
-  if (p < fadeOutStart) {
-    return 1;
-  }
-  if (p < fadeOutEnd) {
-    return 1 - easeInOut((p - fadeOutStart) / HERO_TEXT_FADE_OUT);
-  }
-  return 0;
-}
-
-/** Появление мяча в фазе 3 (fade + scale по скроллу). */
-function getBallOpacity(progress) {
-  const { transfer23End } = HERO_PROGRESS;
-  const p = clamp(progress, 0, 1);
-  const fadeInEnd = transfer23End + HERO_BALL_FADE_IN;
-
-  if (p < transfer23End) {
-    return 0;
-  }
-  if (p < fadeInEnd) {
-    return easeInOut((p - transfer23End) / HERO_BALL_FADE_IN);
-  }
-  return 1;
-}
-
-/**
- * @param {number} progress
- * @param {number} introOpacity 0…1, появление текста фазы 1 при загрузке
- */
-function getTextOpacity(progress, introOpacity) {
-  const { loop1End, transfer12End, loop2End, transfer23End } = HERO_PROGRESS;
-
-  return {
-    scene1: introOpacity * sceneFadeOutOnly(progress, loop1End),
-    scene2: sceneOpacity(progress, transfer12End, loop2End),
-    scene3: sceneOpacity(progress, transfer23End, 1),
+  const SCROLL_PREFETCH = {
+    transfer12: 0.14,
+    loop2: 0.28,
+    transfer23: 0.48,
   };
-}
 
-export function initHero() {
+  /** @param {{ path: string }} spec */
+  const sheetBaseUrl = (spec) => `${import.meta.env.BASE_URL}${spec.path}`;
+
+  const getMediaState = (progress) => {
+    const p = clamp(progress, 0, 1);
+    const { loop1End, transfer12End, loop2End, transfer23End } = HERO_PROGRESS;
+
+    if (p < loop1End) {
+      return { mode: 'loop1' };
+    }
+    if (p < transfer12End) {
+      const t = (p - loop1End) / (transfer12End - loop1End);
+      return { mode: 'transfer12', healT: clamp(t, 0, 1) };
+    }
+    if (p < loop2End) {
+      return { mode: 'loop2' };
+    }
+    if (p < transfer23End) {
+      const t = (p - loop2End) / (transfer23End - loop2End);
+      return { mode: 'transfer23', healT: clamp(t, 0, 1) };
+    }
+    return { mode: 'black' };
+  };
+
+  const sceneOpacity = (progress, fadeInStart, fadeOutStart) => {
+    const p = clamp(progress, 0, 1);
+    const fadeInEnd = fadeInStart + HERO_TEXT_FADE_IN;
+    const fadeOutEnd = fadeOutStart + HERO_TEXT_FADE_OUT;
+
+    if (p < fadeInStart) {
+      return 0;
+    }
+    if (p < fadeInEnd) {
+      return easeInOut((p - fadeInStart) / HERO_TEXT_FADE_IN);
+    }
+    if (p < fadeOutStart) {
+      return 1;
+    }
+    if (p < fadeOutEnd) {
+      return 1 - easeInOut((p - fadeOutStart) / HERO_TEXT_FADE_OUT);
+    }
+    return 0;
+  };
+
+  const sceneFadeOutOnly = (progress, fadeOutStart) => {
+    const p = clamp(progress, 0, 1);
+    const fadeOutEnd = fadeOutStart + HERO_TEXT_FADE_OUT;
+
+    if (p < fadeOutStart) {
+      return 1;
+    }
+    if (p < fadeOutEnd) {
+      return 1 - easeInOut((p - fadeOutStart) / HERO_TEXT_FADE_OUT);
+    }
+    return 0;
+  };
+
+  const getBallOpacity = (progress) => {
+    const { transfer23End } = HERO_PROGRESS;
+    const p = clamp(progress, 0, 1);
+    const fadeInEnd = transfer23End + HERO_BALL_FADE_IN;
+
+    if (p < transfer23End) {
+      return 0;
+    }
+    if (p < fadeInEnd) {
+      return easeInOut((p - transfer23End) / HERO_BALL_FADE_IN);
+    }
+    return 1;
+  };
+
+  const getTextOpacity = (progress, introOpacity) => {
+    const { loop1End, transfer12End, loop2End, transfer23End } = HERO_PROGRESS;
+
+    return {
+      scene1: introOpacity * sceneFadeOutOnly(progress, loop1End),
+      scene2: sceneOpacity(progress, transfer12End, loop2End),
+      scene3: sceneOpacity(progress, transfer23End, 1),
+    };
+  };
+
   const pin = document.querySelector('[data-hero-pin]');
   const canvas = document.querySelector('[data-hero-canvas]');
   const phase3Ball = document.querySelector('[data-hero-ball]');

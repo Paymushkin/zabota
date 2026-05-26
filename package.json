@@ -6,6 +6,7 @@
   "scripts": {
     "optimize-images": "node scripts/optimize-images.mjs",
     "build-hero-sprites": "node scripts/build-hero-sprites.mjs",
+    "build-hero-sprites-test": "node scripts/build-hero-sprites-test.mjs",
     "optimize-video": "node scripts/optimize-video.mjs",
     "prerender": "node scripts/prerender-sections.mjs",
     "dev": "vite --open",
