@@ -1,34 +1,62 @@
 /**
- * Сжимает public/video/tv-video.mp4 для веба (faststart, ~1280px, без аудио).
- * Исходник: tv-video.source.mp4 или текущий tv-video.mp4
+ * Сжимает tv-video.mp4 для веба (faststart, ~1280px, без аудио).
+ * Исходник: /tv-video.mp4 → old/video/tv-video.source.mp4 → public/video/tv-video.mp4
  */
-import { access, rename } from 'node:fs/promises';
+import { access, copyFile, mkdir, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 
-const root = join(fileURLToPath(import.meta.url), '..');
-const out = join(root, 'public', 'video', 'tv-video.mp4');
-const backup = join(root, 'old', 'video', 'tv-video.source.mp4');
-const temp = join(root, 'public', 'video', 'tv-video.opt.mp4');
+const ROOT = join(import.meta.dirname, '..');
+const rootSrc = join(ROOT, 'tv-video.mp4');
+const out = join(ROOT, 'public', 'video', 'tv-video.mp4');
+const backup = join(ROOT, 'old', 'video', 'tv-video.source.mp4');
+const temp = join(ROOT, 'public', 'video', 'tv-video.opt.mp4');
+
+async function pathExists(filePath) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 async function pickInput() {
-  try {
-    await access(backup);
-    return backup;
-  } catch {
-    return out;
+  if (await pathExists(rootSrc)) {
+    return { path: rootSrc, fromRoot: true };
+  }
+  if (await pathExists(backup)) {
+    return { path: backup, fromRoot: false };
+  }
+  if (await pathExists(out)) {
+    return { path: out, fromRoot: false, fromOut: true };
+  }
+  throw new Error('No tv-video source: add tv-video.mp4 to project root');
+}
+
+async function archiveSource({ path, fromRoot, fromOut }) {
+  await mkdir(join(ROOT, 'old', 'video'), { recursive: true });
+
+  if (fromRoot) {
+    await copyFile(path, backup);
+    return;
+  }
+
+  if (fromOut) {
+    await rename(path, backup);
   }
 }
 
 const input = await pickInput();
+
+await mkdir(join(ROOT, 'public', 'video'), { recursive: true });
 
 const result = spawnSync(
   'ffmpeg',
   [
     '-y',
     '-i',
-    input,
+    input.path,
     '-an',
     '-c:v',
     'libx264',
@@ -49,9 +77,6 @@ if (result.status !== 0) {
   process.exit(result.status ?? 1);
 }
 
-if (input === out) {
-  await rename(out, backup);
-}
-
+await archiveSource(input);
 await rename(temp, out);
 console.log('Optimized:', out);

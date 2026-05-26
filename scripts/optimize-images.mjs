@@ -3,6 +3,7 @@ import { join, parse } from 'node:path';
 import sharp from 'sharp';
 
 const ROOT = join(import.meta.dirname, '..');
+const PUBLIC_ROOT = join(ROOT, 'public');
 const SRC_DIR = join(ROOT, 'img');
 const OUT_DIR = join(ROOT, 'public', 'img');
 const FONTS_OUT = join(ROOT, 'public', 'fonts');
@@ -38,6 +39,27 @@ async function pathExists(filePath) {
   } catch {
     return false;
   }
+}
+
+/** Корень проекта: favicon.png → public/favicon.png (для <link rel="icon">) */
+async function optimizeFavicon() {
+  const input = join(ROOT, 'favicon.png');
+  if (!(await pathExists(input))) {
+    return;
+  }
+
+  await mkdir(PUBLIC_ROOT, { recursive: true });
+  const output = join(PUBLIC_ROOT, 'favicon.png');
+  await sharp(input)
+    .resize({
+      width: 192,
+      height: 192,
+      fit: 'contain',
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png({ compressionLevel: 9 })
+    .toFile(output);
+  console.log('  favicon.png → public/');
 }
 
 async function copyFonts() {
@@ -174,6 +196,8 @@ async function optimizeHeroFrames() {
 
 async function optimize() {
   await copyFonts();
+  console.log('Favicon:');
+  await optimizeFavicon();
   console.log('Static images:');
   await optimizeStatic();
   console.log('Hero static:');

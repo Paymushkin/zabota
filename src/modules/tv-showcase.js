@@ -4,6 +4,7 @@ import {
   TV_SHOWCASE_STAGE3_SCALE,
   TV_SHOWCASE_VIDEO_PLAYBACK_RATE,
   TV_SHOWCASE_VIDEO_SRC,
+  TV_SHOWCASE_VIDEO_STAGE_SCALE,
 } from '../data/tv-showcase.js';
 import { lerp, segmentT } from '../utils/math.js';
 import {
@@ -34,18 +35,18 @@ function hydrateLazyImages(root) {
 /**
  * @param {HTMLElement} media
  * @param {HTMLImageElement} img
+ * @param {number} stageScale
  */
-function measureLayout(media, img) {
+function measureLayout(media, img, stageScale) {
   const mediaRect = media.getBoundingClientRect();
   const imgWidth = img.offsetWidth;
-  const scale = TV_SHOWCASE_STAGE3_SCALE;
-  const scaledWidth = imgWidth * scale;
+  const scaledWidth = imgWidth * stageScale;
 
   const peekLeft = window.innerWidth - imgWidth * PEEK_VISIBLE_RATIO;
   const peekX = peekLeft - mediaRect.left;
   const revealX = mediaRect.width - scaledWidth;
 
-  return { peekX, revealX, scale };
+  return { peekX, revealX, scale: stageScale };
 }
 
 /**
@@ -177,12 +178,7 @@ function applyTvShowcaseFrame(
   } = TV_SHOWCASE_PROGRESS;
   const crossfadeT = segmentT(progress, crossfadeStart, crossfadeEnd);
   const revealT = segmentT(progress, revealStart, revealEnd);
-  const layout = measureLayout(media, img2);
-
-  const translateX = lerp(layout.peekX, layout.revealX, revealT);
-  const scale = lerp(1, layout.scale, revealT);
-
-  stage.style.transform = `translate3d(${translateX}px, -50%, 0) scale(${scale})`;
+  const imageLayout = measureLayout(media, img2, TV_SHOWCASE_STAGE3_SCALE);
 
   if (progress >= videoPrefetchStart) {
     prefetchVideo();
@@ -207,13 +203,20 @@ function applyTvShowcaseFrame(
   const wantsVideoEffective = wantsVideo || videoActivatedLocal;
   const showVideo = wantsVideoEffective && isReady;
 
+  const imageScale = lerp(1, imageLayout.scale, revealT);
+
   if (showVideo) {
+    const videoLayout = measureLayout(media, img2, TV_SHOWCASE_VIDEO_STAGE_SCALE);
+    stage.style.transform = `translate3d(${videoLayout.revealX}px, -50%, 0) scale(${TV_SHOWCASE_VIDEO_STAGE_SCALE})`;
     setLayerOpacity(img1, 0);
     setLayerOpacity(img2, 0);
     setLayerOpacity(videoWrap, 1);
     syncVideoPlayback(video, true);
     return videoActivatedLocal;
   }
+
+  const translateX = lerp(imageLayout.peekX, imageLayout.revealX, revealT);
+  stage.style.transform = `translate3d(${translateX}px, -50%, 0) scale(${imageScale})`;
 
   setLayerOpacity(videoWrap, 0);
   syncVideoPlayback(video, false);
