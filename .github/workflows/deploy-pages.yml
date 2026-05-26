@@ -1,3 +1,4 @@
+# Сборка Vite и публикация на GitHub Pages (BASE_PATH=/zabota/).
 name: Deploy to GitHub Pages
 
 on:
