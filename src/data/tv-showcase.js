@@ -23,4 +23,4 @@ export const TV_SHOWCASE_PROGRESS = {
 export const TV_SHOWCASE_STAGE3_SCALE = 0.58;
 
 /** Масштаб стадии при показе видео. */
-export const TV_SHOWCASE_VIDEO_STAGE_SCALE = 0.92;
+export const TV_SHOWCASE_VIDEO_STAGE_SCALE = 0.8;
