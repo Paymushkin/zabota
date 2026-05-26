@@ -8,22 +8,30 @@ import {
   HERO_INTRO_TEXT_FADE_MS,
   HERO_TEXT_FADE_IN,
   HERO_TEXT_FADE_OUT,
+  HERO_LOOP1_BOOTSTRAP_END,
+  HERO_MEDIA_MAX_CONCURRENT,
 } from '../data/hero.js';
-import { loadImage, loadSequenceBatched, runWhenIdle } from '../utils/media-loader.js';
+import {
+  loadImage,
+  loadSequenceBatched,
+  runWhenIdle,
+  setMediaLoadConcurrency,
+} from '../utils/media-loader.js';
 import { clamp, easeInOut } from '../utils/math.js';
 import { isPinPast } from '../utils/scroll-pin.js';
 
-const LOOP1_CONCURRENCY = 6;
-const DEFERRED_CONCURRENCY = 4;
+const DEFERRED_CONCURRENCY = 2;
 
 /** @type {readonly (keyof typeof HERO_SEQUENCES)[]} */
 const DEFERRED_SEQUENCE_KEYS = ['transfer12', 'loop2', 'transfer23'];
 
 const SCROLL_PREFETCH = {
-  transfer12: 0.1,
-  loop2: 0.24,
-  transfer23: 0.44,
+  transfer12: 0.14,
+  loop2: 0.28,
+  transfer23: 0.48,
 };
+
+const LOOP1_IDLE_DELAY_MS = 3500;
 
 /**
  * @param {{ path: string; prefix: string; count: number }} spec
@@ -156,7 +164,8 @@ export function initHero() {
   let introOpacity = 0;
   let introTimer = null;
   let introRafId = 0;
-  let idlePrefetchStarted = false;
+  let loop1BootstrapStarted = false;
+  let loop1CompleteStarted = false;
 
   const syncPinHeight = () => {
     pin.style.height = `${window.innerHeight * HERO_PIN_VIEWPORT}px`;
@@ -363,25 +372,6 @@ export function initHero() {
     }
   };
 
-  const prefetchDeferredIdle = () => {
-    if (idlePrefetchStarted) {
-      return;
-    }
-    idlePrefetchStarted = true;
-
-    runWhenIdle(() => {
-      void ensureSequence('transfer12').then(() => {
-        runWhenIdle(() => {
-          void ensureSequence('loop2').then(() => {
-            runWhenIdle(() => {
-              void ensureSequence('transfer23');
-            });
-          });
-        });
-      });
-    });
-  };
-
   const update = () => {
     syncPinHeight();
     scrollProgress = getScrollProgress();
@@ -452,23 +442,66 @@ export function initHero() {
     update();
   };
 
-  const loadLoop1Rest = async () => {
+  const loadLoop1Bootstrap = async () => {
+    if (loop1BootstrapStarted) {
+      return;
+    }
+    loop1BootstrapStarted = true;
+
     const spec = HERO_SEQUENCES.loop1;
-    if (spec.count <= 1) {
-      prefetchDeferredIdle();
+    const end = Math.min(spec.count, HERO_LOOP1_BOOTSTRAP_END);
+    if (end <= 1) {
       return;
     }
 
-    const rest = await loadSequenceBatched(spec, (index) => frameUrl(spec, index), {
-      concurrency: LOOP1_CONCURRENCY,
+    const chunk = await loadSequenceBatched(spec, (index) => frameUrl(spec, index), {
+      concurrency: DEFERRED_CONCURRENCY,
       start: 2,
+      end,
     });
-    frames.loop1 = [frames.loop1[0], ...rest];
-    prefetchDeferredIdle();
+    frames.loop1.push(...chunk);
+  };
+
+  const loadLoop1Complete = async () => {
+    if (loop1CompleteStarted) {
+      return;
+    }
+    loop1CompleteStarted = true;
+
+    const spec = HERO_SEQUENCES.loop1;
+    const start = Math.min(spec.count, HERO_LOOP1_BOOTSTRAP_END) + 1;
+    if (start > spec.count) {
+      return;
+    }
+
+    const chunk = await loadSequenceBatched(spec, (index) => frameUrl(spec, index), {
+      concurrency: DEFERRED_CONCURRENCY,
+      start,
+      end: spec.count,
+    });
+    frames.loop1.push(...chunk);
+  };
+
+  const scheduleLoop1Loads = () => {
+    if (reducedMotion.matches) {
+      return;
+    }
+
+    runWhenIdle(() => {
+      void loadLoop1Bootstrap();
+    }, 1200);
+
+    const startComplete = () => {
+      void loadLoop1Complete();
+    };
+
+    window.addEventListener('scroll', startComplete, { once: true, passive: true });
+    window.setTimeout(startComplete, LOOP1_IDLE_DELAY_MS);
   };
 
   const bootstrap = async () => {
     try {
+      setMediaLoadConcurrency(HERO_MEDIA_MAX_CONCURRENT);
       const firstFrame = await loadImage(frameUrl(HERO_SEQUENCES.loop1, 1));
       markReady(firstFrame);
 
@@ -476,7 +509,7 @@ export function initHero() {
         return;
       }
 
-      void loadLoop1Rest();
+      scheduleLoop1Loads();
     } catch {
       ready = false;
     }
@@ -506,7 +539,8 @@ export function initHero() {
     listenersAttached = false;
     ready = false;
     introOpacity = 0;
-    idlePrefetchStarted = false;
+    loop1BootstrapStarted = false;
+    loop1CompleteStarted = false;
     pin.style.removeProperty('height');
     for (const key of DEFERRED_SEQUENCE_KEYS) {
       delete sequenceLoads[key];

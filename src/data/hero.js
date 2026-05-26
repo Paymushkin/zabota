@@ -47,3 +47,9 @@ export const HERO_SEQUENCES = {
 };
 
 export const HERO_LOOP_FPS = 24;
+
+/** Кадры loop1 для первой секунды анимации (~24 fps). */
+export const HERO_LOOP1_BOOTSTRAP_END = 24;
+
+/** Макс. параллельных загрузок изображений (hero + фон). */
+export const HERO_MEDIA_MAX_CONCURRENT = 3;
