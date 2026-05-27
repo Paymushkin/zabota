@@ -80,9 +80,7 @@
   }
 
   .hero-glitch__stripe--blink {
-    opacity: calc(var(--stripe-off-active, var(--stripe-off, 0.1)) * var(--stripe-visibility, 1));
-    animation: hero-glitch-stripe-blink var(--stripe-duration, 0.6s) steps(2) infinite;
-    animation-delay: var(--stripe-delay, 0s);
+    opacity: var(--stripe-off, 0.1);
   }
 
   .hero-glitch__scan--bottom {
@@ -125,31 +123,6 @@
 
     .hero__dim {
       background: rgb(0 0 0 / calc(10% + var(--photo-dim, 0) * 35%));
-    }
-  }
-}
-
-@keyframes hero-glitch-stripe-blink {
-  0%,
-  46% {
-    opacity: calc(var(--stripe-on-active, var(--stripe-on, 0.5)) * var(--stripe-visibility, 1));
-  }
-
-  47%,
-  100% {
-    opacity: calc(var(--stripe-off-active, var(--stripe-off, 0.08)) * var(--stripe-visibility, 1));
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero--glitch {
-    .hero-glitch__fx {
-      visibility: hidden !important;
-      opacity: 0 !important;
-    }
-
-    .hero-glitch__stripe--blink {
-      animation: none !important;
     }
   }
 }

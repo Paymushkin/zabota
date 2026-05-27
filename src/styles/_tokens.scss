@@ -28,6 +28,12 @@
   --duration-interactive: 0.2s;
   --ease-interactive: ease;
 
+  --scrollbar-size: 10px;
+  --scrollbar-track: rgb(255 255 255 / 6%);
+  --scrollbar-thumb: rgb(246 241 241 / 28%);
+  --scrollbar-thumb-hover: rgb(246 241 241 / 48%);
+  --scrollbar-thumb-active: rgb(246 241 241 / 62%);
+
   --font-text: 'YS Text', system-ui, -apple-system, sans-serif;
   --font-heading: 'YS Geo', 'YS Text', system-ui, sans-serif;
 

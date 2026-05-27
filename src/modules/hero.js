@@ -1,6 +1,9 @@
 import * as defaultHeroConfig from '../data/hero.js';
 import { getHeroSnapTarget } from '../utils/hero-snap.js';
-import { getHeroTextOpacities } from '../utils/hero-text-opacity.js';
+import {
+  getHeroTextOpacities,
+  getHeroTextSceneShifts,
+} from '../utils/hero-text-opacity.js';
 import { loadImage, loadImageCritical } from '../utils/media-loader.js';
 import { clamp, easeInOut } from '../utils/math.js';
 import {
@@ -98,6 +101,10 @@ export function initHero(heroConfig = defaultHeroConfig) {
   if (!pin || !canvas) {
     return;
   }
+
+  // Сглаживание translateY, чтобы движение было ещё плавнее между апдейтами скролла.
+  /** @type {Map<string, number>} */
+  const sceneShiftYState = new Map();
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const ctx = canvas.getContext('2d', { alpha: false });
@@ -223,10 +230,26 @@ export function initHero(heroConfig = defaultHeroConfig) {
 
   const applyTextOpacity = () => {
     const opacities = getHeroTextOpacities(scrollProgress, introOpacity, textOpacityConfig);
+    const shifts = getHeroTextSceneShifts(scrollProgress, textOpacityConfig);
+    // Максимальное смещение по Y (больше — эффект "уходит вверх / появляется снизу").
+    const yMax = Math.round(clamp(window.innerHeight * 0.16, 60, 240));
+    const SMOOTH = 0.22; // 0..1: чем больше — тем меньше "запаздывание"
+
     scenes.forEach((scene) => {
       const id = scene.dataset.heroScene;
       const opacity = opacities[`scene${id}`] ?? 0;
       scene.style.opacity = String(opacity);
+      if (reducedMotion.matches) {
+        scene.style.transform = 'none';
+        sceneShiftYState.delete(`scene${id}`);
+      } else {
+        const shift = shifts[`scene${id}`] ?? 0;
+        const targetY = shift * yMax;
+        const prev = sceneShiftYState.get(`scene${id}`) ?? 0;
+        const next = prev + (targetY - prev) * SMOOTH;
+        sceneShiftYState.set(`scene${id}`, next);
+        scene.style.transform = `translate3d(0, ${next.toFixed(2)}px, 0)`;
+      }
       scene.classList.toggle('is-active', opacity > 0.02);
       scene.setAttribute('aria-hidden', opacity <= 0.02 ? 'true' : 'false');
     });
@@ -295,7 +318,7 @@ export function initHero(heroConfig = defaultHeroConfig) {
   };
 
   const advanceLoops = (time) => {
-    if (reducedMotion.matches || !ready) {
+    if (!ready) {
       return;
     }
 
@@ -562,18 +585,18 @@ export function initHero(heroConfig = defaultHeroConfig) {
     }
 
     if (reducedMotion.matches) {
-      stopLoop();
       stopIntroText();
       if (ready) {
         introOpacity = 1;
       }
-    } else if (ready) {
-      if (!introStarted) {
-        startIntroText();
-      } else {
-        introOpacity = 1;
-        applyTextOpacity();
-      }
+    } else if (!introStarted) {
+      startIntroText();
+    } else {
+      introOpacity = 1;
+      applyTextOpacity();
+    }
+
+    if (ready) {
       startLoop();
     }
     render();

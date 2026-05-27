@@ -40,6 +40,15 @@ export default defineConfig({
   base: process.env.BASE_PATH || '/',
   plugins: [htmlIncludes()],
   publicDir: 'public',
+  /** Доступ с телефона/другого ПК в той же Wi‑Fi сети (http://<LAN-IP>:5173/) */
+  server: {
+    host: true,
+    port: 5173,
+  },
+  preview: {
+    host: true,
+    port: 4173,
+  },
   build: {
     cssMinify: true,
     rollupOptions: {

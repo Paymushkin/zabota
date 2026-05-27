@@ -129,15 +129,6 @@ function applyScrollStepsFrame(cards, progress) {
   });
 }
 
-function clearCardStyles(card) {
-  card.style.removeProperty('transform');
-  card.style.removeProperty('z-index');
-  card.style.removeProperty('opacity');
-  card.style.removeProperty('--scroll-steps-text-opacity');
-  card.style.removeProperty('visibility');
-  card.removeAttribute('aria-hidden');
-}
-
 export function initScrollSteps() {
   const pin = document.querySelector('[data-scroll-steps-pin]');
   const deck = document.querySelector('[data-scroll-steps-deck]');
@@ -153,7 +144,6 @@ export function initScrollSteps() {
 
   const section = pin.closest('.scroll-steps');
   const desktopMq = window.matchMedia(DESKTOP_MQ);
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   /** @type {import('gsap/ScrollTrigger').ScrollTrigger | null} */
   let pinScrollTrigger = null;
   let resizeAttached = false;
@@ -209,7 +199,7 @@ export function initScrollSteps() {
     syncLayout();
     pinScrollTrigger = createPinScrollTrigger({
       trigger: pin,
-      reducedMotion: reducedMotion.matches,
+      reducedMotion: false,
       snapTo: getScrollStepsSnapTarget,
       onUpdate: handleProgress,
     });
@@ -236,29 +226,13 @@ export function initScrollSteps() {
     card.querySelector('img')?.addEventListener('load', refreshScroll, { once: true });
   });
 
-  const detachAll = () => {
-    detachScroll();
-    cards.forEach(clearCardStyles);
-    deck.style.removeProperty('min-height');
-    pin.style.removeProperty('height');
-    section?.style.removeProperty('min-height');
-  };
-
   const applyMode = () => {
-    if (reducedMotion.matches) {
-      detachAll();
-      applyPastPinFrame();
-    } else {
-      attachScroll();
-    }
+    attachScroll();
   };
 
-  reducedMotion.addEventListener('change', applyMode);
   desktopMq.addEventListener('change', () => {
-    if (!reducedMotion.matches) {
-      mountScrollTrigger();
-      refreshScroll();
-    }
+    mountScrollTrigger();
+    refreshScroll();
   });
   applyMode();
 }

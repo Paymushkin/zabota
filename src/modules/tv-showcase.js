@@ -16,7 +16,8 @@ import { isPinPast } from '../utils/scroll-pin.js';
 import { getTvShowcaseSnapTarget } from '../utils/tv-showcase-snap.js';
 
 const PEEK_VISIBLE_RATIO = 0.5;
-const VIDEO_END_EPS = 0.05;
+/** Смещение к последнему кадру (≈1 кадр при 30 fps). */
+const VIDEO_LAST_FRAME_OFFSET = 1 / 30;
 
 /**
  * @param {ParentNode} root
@@ -51,17 +52,36 @@ function measureLayout(media, img, stageScale) {
 
 /**
  * @param {HTMLVideoElement} video
+ * @param {{ parked: boolean }} state
  */
-function parkVideoOnLastFrame(video) {
-  const { duration } = video;
+function parkVideoOnLastFrame(video, state) {
+  video.pause();
 
-  if (!Number.isFinite(duration) || duration <= 0) {
-    video.pause();
+  if (state.parked) {
     return;
   }
 
+  state.parked = true;
+
+  const { duration } = video;
+  if (!Number.isFinite(duration) || duration <= 0) {
+    return;
+  }
+
+  const lastFrameTime = Math.max(0, duration - VIDEO_LAST_FRAME_OFFSET);
+  if (Math.abs(video.currentTime - lastFrameTime) > 0.001) {
+    video.currentTime = lastFrameTime;
+  }
+}
+
+/**
+ * @param {HTMLVideoElement} video
+ * @param {{ parked: boolean }} state
+ */
+function resetVideoPlayback(video, state) {
+  state.parked = false;
   video.pause();
-  video.currentTime = Math.max(0, duration - VIDEO_END_EPS);
+  video.currentTime = 0;
 }
 
 /**
@@ -74,20 +94,25 @@ function isVideoReadyToShow(video) {
 /**
  * @param {HTMLVideoElement} video
  * @param {boolean} shouldPlay
+ * @param {{ parked: boolean }} state
  */
-function syncVideoPlayback(video, shouldPlay) {
+function syncVideoPlayback(video, shouldPlay, state) {
   if (!shouldPlay) {
-    video.pause();
-    video.currentTime = 0;
+    resetVideoPlayback(video, state);
     return;
   }
 
-  if (video.ended) {
-    parkVideoOnLastFrame(video);
+  if (state.parked || video.ended) {
+    parkVideoOnLastFrame(video, state);
     return;
   }
 
   const startPlayback = () => {
+    if (state.parked || video.ended) {
+      parkVideoOnLastFrame(video, state);
+      return;
+    }
+
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise.catch(() => {});
@@ -155,6 +180,7 @@ function setLayerOpacity(element, opacity) {
  * @param {number} progress
  * @param {() => void} prefetchVideo
  * @param {boolean} videoActivated
+ * @param {{ parked: boolean }} videoState
  * @returns {boolean} updated videoActivated
  */
 function applyTvShowcaseFrame(
@@ -167,6 +193,7 @@ function applyTvShowcaseFrame(
   progress,
   prefetchVideo,
   videoActivated,
+  videoState,
 ) {
   const {
     crossfadeStart,
@@ -211,7 +238,7 @@ function applyTvShowcaseFrame(
     setLayerOpacity(img1, 0);
     setLayerOpacity(img2, 0);
     setLayerOpacity(videoWrap, 1);
-    syncVideoPlayback(video, true);
+    syncVideoPlayback(video, true, videoState);
     return videoActivatedLocal;
   }
 
@@ -219,7 +246,7 @@ function applyTvShowcaseFrame(
   stage.style.transform = `translate3d(${translateX}px, -50%, 0) scale(${imageScale})`;
 
   setLayerOpacity(videoWrap, 0);
-  syncVideoPlayback(video, false);
+  syncVideoPlayback(video, false, videoState);
 
   if (wantsVideoEffective) {
     setLayerOpacity(img1, 0);
@@ -230,14 +257,6 @@ function applyTvShowcaseFrame(
   setLayerOpacity(img1, 1 - crossfadeT);
   setLayerOpacity(img2, crossfadeT);
   return videoActivatedLocal;
-}
-
-function clearTvShowcaseStyles(stage, img1, img2, videoWrap) {
-  stage.style.removeProperty('transform');
-  for (const el of [img1, img2, videoWrap]) {
-    el.style.removeProperty('opacity');
-    el.classList.remove('is-visible');
-  }
 }
 
 export function initTvShowcase() {
@@ -258,11 +277,11 @@ export function initTvShowcase() {
   ensureVideoSource(video);
 
   const prefetchVideo = createVideoPrefetch(video);
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   /** @type {import('gsap/ScrollTrigger').ScrollTrigger | null} */
   let pinScrollTrigger = null;
   let resizeAttached = false;
   let videoActivated = false;
+  const videoState = { parked: false };
 
   const syncLayout = () => {
     pin.style.height = `${TV_SHOWCASE_PIN_VIEWPORT * window.innerHeight}px`;
@@ -280,13 +299,13 @@ export function initTvShowcase() {
       1,
       prefetchVideo,
       videoActivated,
+      videoState,
     );
   };
 
   const handleProgress = (progress) => {
     if (isPinPast(pin)) {
       applyFinalFrame();
-      parkVideoOnLastFrame(video);
       return;
     }
 
@@ -300,6 +319,7 @@ export function initTvShowcase() {
       progress,
       prefetchVideo,
       videoActivated,
+      videoState,
     );
   };
 
@@ -318,7 +338,7 @@ export function initTvShowcase() {
     syncLayout();
     pinScrollTrigger = createPinScrollTrigger({
       trigger: pin,
-      reducedMotion: reducedMotion.matches,
+      reducedMotion: false,
       snapTo: (progress) => getTvShowcaseSnapTarget(progress, TV_SHOWCASE_PROGRESS),
       onUpdate: handleProgress,
     });
@@ -332,16 +352,7 @@ export function initTvShowcase() {
     }
   };
 
-  const detachScroll = () => {
-    destroyPinScrollTrigger(pinScrollTrigger);
-    pinScrollTrigger = null;
-    if (resizeAttached) {
-      window.removeEventListener('resize', onResize);
-      resizeAttached = false;
-    }
-  };
-
-  video.addEventListener('ended', () => parkVideoOnLastFrame(video));
+  video.addEventListener('ended', () => parkVideoOnLastFrame(video, videoState));
 
   const onMediaReady = () => refreshScroll();
 
@@ -350,28 +361,5 @@ export function initTvShowcase() {
   video.addEventListener('loadeddata', onMediaReady, { once: true });
   video.addEventListener('canplay', onMediaReady);
 
-  const detachAll = () => {
-    detachScroll();
-    video.pause();
-    clearTvShowcaseStyles(stage, img1, img2, videoWrap);
-    pin.style.removeProperty('height');
-  };
-
-  const applyMode = () => {
-    if (reducedMotion.matches) {
-      detachAll();
-      applyFinalFrame();
-      parkVideoOnLastFrame(video);
-      if (!Number.isFinite(video.duration)) {
-        video.addEventListener('loadedmetadata', () => parkVideoOnLastFrame(video), {
-          once: true,
-        });
-      }
-    } else {
-      attachScroll();
-    }
-  };
-
-  reducedMotion.addEventListener('change', applyMode);
-  applyMode();
+  attachScroll();
 }

@@ -8,14 +8,17 @@ import {
   HERO_TEXT_FADE_OUT,
 } from '../data/hero.js';
 import { getHeroSnapTarget } from '../utils/hero-snap.js';
-import { getHeroTextOpacities } from '../utils/hero-text-opacity.js';
+import {
+  getHeroTextOpacities,
+  getHeroTextSceneShifts,
+} from '../utils/hero-text-opacity.js';
 import { clamp, easeInOut } from '../utils/math.js';
 import {
   createPinScrollTrigger,
   destroyPinScrollTrigger,
   refreshPinScrollTriggers,
 } from '../utils/pin-scroll-trigger.js';
-import { buildHeroGlitchStripes } from '../utils/hero-glitch-stripes.js';
+import { buildHeroGlitchStripes, createHeroGlitchStripeBlinkLoop } from '../utils/hero-glitch-stripes.js';
 import {
   resetHeroBallOverlap,
   scheduleHeroBallLayoutStabilization,
@@ -36,6 +39,7 @@ export function initHeroGlitch() {
   if (stripesField) {
     buildHeroGlitchStripes(stripesField);
   }
+  const stripeBlink = stripesField ? createHeroGlitchStripeBlinkLoop(stripesField) : null;
   const phase3Ball = document.querySelector('[data-hero-ball]');
   const phase3BallImg = phase3Ball?.querySelector('.hero__ball__img');
   const scenes = [...document.querySelectorAll('[data-hero-scene]')];
@@ -44,6 +48,10 @@ export function initHeroGlitch() {
   if (!section || !pin) {
     return;
   }
+
+  // Сглаживание translateY, чтобы движение было ещё плавнее между апдейтами скролла.
+  /** @type {Map<string, number>} */
+  const sceneShiftYState = new Map();
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   /** @type {import('gsap/ScrollTrigger').ScrollTrigger | null} */
@@ -101,13 +109,6 @@ export function initHeroGlitch() {
 
       stripe.style.setProperty('--stripe-visibility', String(visibility));
       stripe.style.setProperty('--stripe-soften', String(soften));
-
-      if (stripe.classList.contains('hero-glitch__stripe--blink')) {
-        const on = Number.parseFloat(stripe.style.getPropertyValue('--stripe-on') || '0.5');
-        const off = Number.parseFloat(stripe.style.getPropertyValue('--stripe-off') || '0.08');
-        stripe.style.setProperty('--stripe-on-active', String(on * soften));
-        stripe.style.setProperty('--stripe-off-active', String(off * soften));
-      }
     });
   };
 
@@ -136,10 +137,26 @@ export function initHeroGlitch() {
 
   const applyTextOpacity = () => {
     const opacities = getHeroTextOpacities(scrollProgress, introOpacity, textOpacityConfig);
+    const shifts = getHeroTextSceneShifts(scrollProgress, textOpacityConfig);
+    // Максимальное смещение по Y (больше — эффект "уходит вверх / появляется снизу").
+    const yMax = Math.round(clamp(window.innerHeight * 0.16, 60, 240));
+    const SMOOTH = 0.22; // 0..1: чем больше — тем меньше "запаздывание"
+
     scenes.forEach((scene) => {
       const id = scene.dataset.heroScene;
       const opacity = opacities[`scene${id}`] ?? 0;
       scene.style.opacity = String(opacity);
+      if (reducedMotion.matches) {
+        scene.style.transform = 'none';
+        sceneShiftYState.delete(`scene${id}`);
+      } else {
+        const shift = shifts[`scene${id}`] ?? 0;
+        const targetY = shift * yMax;
+        const prev = sceneShiftYState.get(`scene${id}`) ?? 0;
+        const next = prev + (targetY - prev) * SMOOTH;
+        sceneShiftYState.set(`scene${id}`, next);
+        scene.style.transform = `translate3d(0, ${next.toFixed(2)}px, 0)`;
+      }
       scene.classList.toggle('is-active', opacity > 0.02);
       scene.setAttribute('aria-hidden', opacity <= 0.02 ? 'true' : 'false');
     });
@@ -246,6 +263,7 @@ export function initHeroGlitch() {
     applyTextOpacity();
     scheduleHeroBallLayoutStabilization(refreshScroll);
     startIntroText();
+    stripeBlink?.start();
     render();
   };
 
@@ -257,6 +275,7 @@ export function initHeroGlitch() {
     destroyPinScrollTrigger(heroScrollTrigger);
     heroScrollTrigger = null;
     stopIntroText();
+    stripeBlink?.stop();
     listenersAttached = false;
     introOpacity = 0;
     introStarted = false;

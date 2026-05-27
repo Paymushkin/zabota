@@ -129,7 +129,7 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (max-width: 979px) and (prefers-reduced-motion: reduce) {
   .scroll-steps__pin {
     height: auto;
   }

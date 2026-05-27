@@ -73,6 +73,8 @@
 
   &.is-active {
     visibility: visible;
+    /* Выше .hero__dim (z-index: 1), чтобы на финальной стадии мяч не затемнялся */
+    z-index: 2;
   }
 
   /* Мяч под текстом hero и под заголовком benefits */
@@ -132,6 +134,8 @@
   grid-area: 1 / 1;
   width: 100%;
   text-align: center;
+  transform: translate3d(0, 0, 0);
+  will-change: opacity, transform;
   opacity: 0;
   visibility: hidden;
   transition: visibility 0.35s var(--ease-interactive);
@@ -185,6 +189,7 @@
 @media (prefers-reduced-motion: reduce) {
   .hero__scene {
     transition: none;
+    transform: none !important;
   }
 
   .hero__ball {

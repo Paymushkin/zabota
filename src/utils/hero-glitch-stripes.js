@@ -11,6 +11,9 @@ const STRIPE_COLORS = [
 
 const STRIPE_COUNT = 42;
 
+/** Доля цикла, когда полоска «включена» (как steps(2) в CSS). */
+const BLINK_ON_RATIO = 0.46;
+
 /**
  * @param {HTMLElement} container
  */
@@ -38,16 +41,64 @@ export function buildHeroGlitchStripes(container) {
     stripe.style.backgroundColor = STRIPE_COLORS[i % STRIPE_COLORS.length];
 
     if (isBlink) {
-      const delay = ((i * 0.31) % 1.6).toFixed(2);
-      const duration = (0.5 + (i % 8) * 0.14).toFixed(2);
-      stripe.style.setProperty('--stripe-delay', `${delay}s`);
-      stripe.style.setProperty('--stripe-duration', `${duration}s`);
-      stripe.style.setProperty('--stripe-on', String(0.42 + (i % 5) * 0.09));
-      stripe.style.setProperty('--stripe-off', String(0.06 + (i % 4) * 0.03));
+      const phaseMs = Math.round((((i * 0.31) % 1.6) * 1000));
+      const durationMs = Math.round((0.5 + (i % 8) * 0.14) * 1000);
+      stripe.dataset.stripeOn = String(0.42 + (i % 5) * 0.09);
+      stripe.dataset.stripeOff = String(0.06 + (i % 4) * 0.03);
+      stripe.dataset.stripeDuration = String(durationMs);
+      stripe.dataset.stripePhase = String(phaseMs);
     } else {
       stripe.style.setProperty('--stripe-static-base', String(0.22 + (i % 7) * 0.05));
     }
 
     container.appendChild(stripe);
   }
+}
+
+/**
+ * JS-мигание полосок: надёжнее CSS @keyframes + custom properties (Windows/Chrome).
+ *
+ * @param {HTMLElement} container
+ */
+export function createHeroGlitchStripeBlinkLoop(container) {
+  let rafId = 0;
+  let running = false;
+
+  const tick = (time) => {
+    if (!running) {
+      return;
+    }
+
+    const stripes = container.querySelectorAll('.hero-glitch__stripe--blink');
+
+    stripes.forEach((stripe) => {
+      const on = Number(stripe.dataset.stripeOn ?? 0.5);
+      const off = Number(stripe.dataset.stripeOff ?? 0.1);
+      const durationMs = Number(stripe.dataset.stripeDuration ?? 600);
+      const phaseMs = Number(stripe.dataset.stripePhase ?? 0);
+      const visibility = Number(stripe.style.getPropertyValue('--stripe-visibility') || 1);
+      const soften = Number(stripe.style.getPropertyValue('--stripe-soften') || 1);
+
+      const phase = ((time + phaseMs) % durationMs) / durationMs;
+      const level = phase < BLINK_ON_RATIO ? on : off;
+      stripe.style.opacity = String(level * visibility * soften);
+    });
+
+    rafId = requestAnimationFrame(tick);
+  };
+
+  return {
+    start() {
+      if (running) {
+        return;
+      }
+      running = true;
+      rafId = requestAnimationFrame(tick);
+    },
+    stop() {
+      running = false;
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    },
+  };
 }
