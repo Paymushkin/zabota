@@ -1,9 +1,8 @@
 import {
+  TV_SHOWCASE_MOTION_SRC,
   TV_SHOWCASE_PIN_VIEWPORT,
   TV_SHOWCASE_PROGRESS,
   TV_SHOWCASE_STAGE3_SCALE,
-  TV_SHOWCASE_VIDEO_PLAYBACK_RATE,
-  TV_SHOWCASE_VIDEO_SRC,
   TV_SHOWCASE_VIDEO_STAGE_SCALE,
 } from '../data/tv-showcase.js';
 import { lerp, segmentT } from '../utils/math.js';
@@ -17,8 +16,6 @@ import { getTvShowcaseSnapTarget } from '../utils/tv-showcase-snap.js';
 import { createTvShowcasePlaybackDebug } from '../utils/tv-showcase-playback-debug.js';
 
 const PEEK_VISIBLE_RATIO = 0.5;
-/** Смещение к последнему кадру (≈1 кадр при 30 fps). */
-const VIDEO_LAST_FRAME_OFFSET = 1 / 30;
 const VIDEO_DEACTIVATE_EPS = 0.03;
 
 /**
@@ -53,134 +50,26 @@ function measureLayout(media, img, stageScale) {
 }
 
 /**
- * @param {HTMLVideoElement} video
- * @param {{ parked: boolean; playBlocked: boolean }} state
+ * Для логики «активировали зону motion» — gif реально отрисовался.
+ *
+ * @param {HTMLImageElement} motionImg
  */
-function parkVideoOnLastFrame(video, state) {
-  video.pause();
-
-  if (state.parked) {
-    return;
-  }
-
-  state.parked = true;
-  state.playBlocked = false;
-
-  const { duration } = video;
-  if (!Number.isFinite(duration) || duration <= 0) {
-    return;
-  }
-
-  const lastFrameTime = Math.max(0, duration - VIDEO_LAST_FRAME_OFFSET);
-  if (Math.abs(video.currentTime - lastFrameTime) > 0.001) {
-    video.currentTime = lastFrameTime;
-  }
-}
-
-/**
- * @param {HTMLVideoElement} video
- * @param {{ parked: boolean; playBlocked: boolean }} state
- */
-function resetVideoPlayback(video, state) {
-  state.parked = false;
-  state.playBlocked = false;
-  video.pause();
-  video.currentTime = 0;
-}
-
-/**
- * @param {HTMLVideoElement} video
- */
-function isVideoReadyToShow(video) {
-  // HAVE_CURRENT_DATA = только первый кадр; Safari часто не стартует play без буфера.
-  return video.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA;
-}
-
-/**
- * @param {HTMLVideoElement} video
- * @param {{ parked: boolean; playBlocked: boolean }} state
- * @param {ReturnType<typeof createTvShowcasePlaybackDebug>} playbackDebug
- * @param {() => void} [onPlayBlocked]
- * @param {() => void} [onPlaySuccess]
- */
-function requestVideoPlay(video, state, playbackDebug, onPlayBlocked, onPlaySuccess) {
-  if (state.parked || video.ended) {
-    parkVideoOnLastFrame(video, state);
-    return;
-  }
-
-  if (!video.paused) {
-    state.playBlocked = false;
-    playbackDebug.clear();
-    onPlaySuccess?.();
-    return;
-  }
-
-  const playPromise = video.play();
-  if (playPromise === undefined) {
-    return;
-  }
-
-  playPromise
-    .then(() => {
-      state.playBlocked = false;
-      playbackDebug.clear();
-      onPlaySuccess?.();
-    })
-    .catch((err) => {
-      state.playBlocked = true;
-      playbackDebug.reportPlayError(err);
-      onPlayBlocked?.();
-    });
-}
-
-/**
- * @param {HTMLVideoElement} video
- * @param {'play' | 'pause' | 'reset'} action
- * @param {{ parked: boolean; playBlocked: boolean }} state
- * @param {ReturnType<typeof createTvShowcasePlaybackDebug>} playbackDebug
- * @param {() => void} onPlayBlocked
- */
-function syncVideoPlayback(video, action, state, playbackDebug, onPlayBlocked) {
-  if (action === 'reset') {
-    resetVideoPlayback(video, state);
-    return;
-  }
-
-  if (action === 'pause') {
-    if (!state.parked) {
-      video.pause();
-    }
-    return;
-  }
-
-  if (state.parked || video.ended) {
-    parkVideoOnLastFrame(video, state);
-    return;
-  }
-
-  const tryPlay = () => requestVideoPlay(video, state, playbackDebug, onPlayBlocked);
-
-  if (isVideoReadyToShow(video)) {
-    tryPlay();
-    return;
-  }
-
-  video.addEventListener('canplay', tryPlay, { once: true });
+function isMotionDecoded(motionImg) {
+  return motionImg.complete && motionImg.naturalWidth > 0;
 }
 
 /**
  * @param {number} progress
- * @param {boolean} wantsVideoEffective
+ * @param {boolean} wantsMotionEffective
  */
-function shouldResetVideoProgress(progress, wantsVideoEffective) {
+function shouldResetMotionSrc(progress, wantsMotionEffective) {
   const { videoStart, videoPrefetchStart } = TV_SHOWCASE_PROGRESS;
 
   if (progress < videoPrefetchStart) {
     return true;
   }
 
-  if (wantsVideoEffective) {
+  if (wantsMotionEffective) {
     return false;
   }
 
@@ -188,25 +77,9 @@ function shouldResetVideoProgress(progress, wantsVideoEffective) {
 }
 
 /**
- * @param {HTMLVideoElement} video
+ * Прогрев кэша без привязки к скрытому <img> — иначе gif «замирает» на 1-м кадре.
  */
-function ensureVideoSource(video) {
-  const src = TV_SHOWCASE_VIDEO_SRC;
-  const source = video.querySelector('source');
-
-  if (source && source.getAttribute('src') !== src) {
-    source.src = src;
-  }
-
-  if (!video.getAttribute('src') && !source?.getAttribute('src')) {
-    video.src = src;
-  }
-}
-
-/**
- * @param {HTMLVideoElement} video
- */
-function createVideoPrefetch(video) {
+function createMotionPrefetch() {
   let started = false;
 
   return () => {
@@ -214,10 +87,28 @@ function createVideoPrefetch(video) {
       return;
     }
     started = true;
-    ensureVideoSource(video);
-    video.preload = 'auto';
-    video.load();
+    const probe = new Image();
+    probe.src = TV_SHOWCASE_MOTION_SRC;
   };
+}
+
+/**
+ * Запуск/перезапуск анимации при показе слоя (Safari/Chrome не крутят gif, загруженный в hidden).
+ *
+ * @param {HTMLImageElement} motionImg
+ */
+function restartMotionGif(motionImg) {
+  const src = TV_SHOWCASE_MOTION_SRC;
+  motionImg.src = '';
+  motionImg.src = src;
+}
+
+/**
+ * @param {HTMLImageElement} motionImg
+ */
+function clearMotionSrc(motionImg) {
+  motionImg.removeAttribute('src');
+  motionImg.src = '';
 }
 
 /**
@@ -235,29 +126,25 @@ function setLayerOpacity(element, opacity) {
  * @param {HTMLElement} media
  * @param {HTMLImageElement} img1
  * @param {HTMLImageElement} img2
- * @param {HTMLElement} videoWrap
- * @param {HTMLVideoElement} video
+ * @param {HTMLElement} motionWrap
+ * @param {HTMLImageElement} motionImg
  * @param {number} progress
- * @param {() => void} prefetchVideo
- * @param {boolean} videoActivated
- * @param {{ parked: boolean; playBlocked: boolean }} videoState
- * @param {ReturnType<typeof createTvShowcasePlaybackDebug>} playbackDebug
- * @param {() => void} onPlayBlocked
- * @returns {boolean} updated videoActivated
+ * @param {() => void} prefetchMotion
+ * @param {boolean} motionActivated
+ * @param {{ visible: boolean }} motionPlayback
+ * @returns {boolean} updated motionActivated
  */
 function applyTvShowcaseFrame(
   stage,
   media,
   img1,
   img2,
-  videoWrap,
-  video,
+  motionWrap,
+  motionImg,
   progress,
-  prefetchVideo,
-  videoActivated,
-  videoState,
-  playbackDebug,
-  onPlayBlocked,
+  prefetchMotion,
+  motionActivated,
+  motionPlayback,
 ) {
   const {
     crossfadeStart,
@@ -272,94 +159,55 @@ function applyTvShowcaseFrame(
   const imageLayout = measureLayout(media, img2, TV_SHOWCASE_STAGE3_SCALE);
 
   if (progress >= videoPrefetchStart) {
-    prefetchVideo();
+    prefetchMotion();
   }
 
-  const wantsVideo = progress >= videoStart;
+  const wantsMotion = progress >= videoStart;
 
-  let videoActivatedLocal = videoActivated;
-  const isReady = isVideoReadyToShow(video);
+  let motionActivatedLocal = motionActivated;
 
-  if (!videoActivatedLocal && wantsVideo && isReady) {
-    videoActivatedLocal = true;
+  if (!motionActivatedLocal && wantsMotion && isMotionDecoded(motionImg)) {
+    motionActivatedLocal = true;
   }
 
-  if (videoActivatedLocal && !wantsVideo && progress < videoStart - VIDEO_DEACTIVATE_EPS) {
-    videoActivatedLocal = false;
+  if (motionActivatedLocal && !wantsMotion && progress < videoStart - VIDEO_DEACTIVATE_EPS) {
+    motionActivatedLocal = false;
   }
 
-  const wantsVideoEffective = wantsVideo || videoActivatedLocal;
-  const showVideo = wantsVideoEffective && isReady;
-  const resetVideo = shouldResetVideoProgress(progress, wantsVideoEffective);
+  const wantsMotionEffective = wantsMotion || motionActivatedLocal;
+  const showMotion = wantsMotionEffective;
+  const resetMotion = shouldResetMotionSrc(progress, wantsMotionEffective);
 
   const imageScale = lerp(1, imageLayout.scale, revealT);
 
-  if (showVideo) {
-    const videoLayout = measureLayout(media, img2, TV_SHOWCASE_VIDEO_STAGE_SCALE);
-    stage.style.transform = `translate3d(${videoLayout.revealX}px, -50%, 0) scale(${TV_SHOWCASE_VIDEO_STAGE_SCALE})`;
+  if (showMotion) {
+    if (!motionPlayback.visible) {
+      restartMotionGif(motionImg);
+      motionPlayback.visible = true;
+    }
+
+    const motionLayout = measureLayout(media, img2, TV_SHOWCASE_VIDEO_STAGE_SCALE);
+    stage.style.transform = `translate3d(${motionLayout.revealX}px, -50%, 0) scale(${TV_SHOWCASE_VIDEO_STAGE_SCALE})`;
     setLayerOpacity(img1, 0);
     setLayerOpacity(img2, 0);
-    setLayerOpacity(videoWrap, 1);
-    syncVideoPlayback(video, 'play', videoState, playbackDebug, onPlayBlocked);
-    return videoActivatedLocal;
+    setLayerOpacity(motionWrap, 1);
+    return motionActivatedLocal;
   }
 
   const translateX = lerp(imageLayout.peekX, imageLayout.revealX, revealT);
   stage.style.transform = `translate3d(${translateX}px, -50%, 0) scale(${imageScale})`;
 
-  setLayerOpacity(videoWrap, 0);
-  syncVideoPlayback(video, resetVideo ? 'reset' : 'pause', videoState, playbackDebug, onPlayBlocked);
-
-  if (wantsVideoEffective) {
-    setLayerOpacity(img1, 0);
-    setLayerOpacity(img2, 1);
-    return videoActivatedLocal;
+  setLayerOpacity(motionWrap, 0);
+  if (motionPlayback.visible) {
+    motionPlayback.visible = false;
+  }
+  if (resetMotion) {
+    clearMotionSrc(motionImg);
   }
 
   setLayerOpacity(img1, 1 - crossfadeT);
   setLayerOpacity(img2, crossfadeT);
-  return videoActivatedLocal;
-}
-
-/**
- * @param {HTMLVideoElement} video
- * @param {{ parked: boolean; playBlocked: boolean }} videoState
- * @param {() => boolean} isVideoVisible
- * @param {ReturnType<typeof createTvShowcasePlaybackDebug>} playbackDebug
- */
-function createPlayGestureUnlock(video, videoState, isVideoVisible, playbackDebug) {
-  let attached = false;
-
-  const detach = () => {
-    document.removeEventListener('pointerdown', onGesture, true);
-    document.removeEventListener('touchstart', onGesture, true);
-    attached = false;
-  };
-
-  const onGesture = () => {
-    if (!isVideoVisible()) {
-      detach();
-      return;
-    }
-
-    if (!videoState.playBlocked) {
-      detach();
-      return;
-    }
-
-    requestVideoPlay(video, videoState, playbackDebug, attachUnlock, detach);
-  };
-
-  const attachUnlock = () => {
-    if (attached || !videoState.playBlocked) {
-      return;
-    }
-    attached = true;
-    document.addEventListener('pointerdown', onGesture, { capture: true, passive: true });
-    document.addEventListener('touchstart', onGesture, { capture: true, passive: true });
-  };
-
-  return attachUnlock;
+  return motionActivatedLocal;
 }
 
 export function initTvShowcase() {
@@ -368,57 +216,49 @@ export function initTvShowcase() {
   const stage = document.querySelector('[data-tv-showcase-stage]');
   const img1 = document.querySelector('[data-tv-showcase-img="1"]');
   const img2 = document.querySelector('[data-tv-showcase-img="2"]');
-  const videoWrap = document.querySelector('[data-tv-showcase-video-wrap]');
-  const video = document.querySelector('[data-tv-showcase-video]');
+  const motionWrap = document.querySelector('[data-tv-showcase-video-wrap]');
+  const motionImg = document.querySelector('[data-tv-showcase-motion]');
 
-  if (!pin || !media || !stage || !img1 || !img2 || !videoWrap || !video) {
+  if (!pin || !media || !stage || !img1 || !img2 || !motionWrap || !motionImg) {
     return;
   }
 
   hydrateLazyImages(stage);
-  video.muted = true;
-  video.defaultMuted = true;
-  video.playsInline = true;
-  video.playbackRate = TV_SHOWCASE_VIDEO_PLAYBACK_RATE;
-  ensureVideoSource(video);
+  stage.style.transformOrigin = 'left center';
 
-  const prefetchVideo = createVideoPrefetch(video);
+  const prefetchMotion = createMotionPrefetch();
   /** @type {import('gsap/ScrollTrigger').ScrollTrigger | null} */
   let pinScrollTrigger = null;
   let resizeAttached = false;
-  let videoActivated = false;
-  const videoState = { parked: false, playBlocked: false };
+  let motionActivated = false;
+  const motionPlayback = { visible: false };
+
   const playbackDebug = createTvShowcasePlaybackDebug();
-
-  playbackDebug.bindVideoElement(video);
-
-  const isVideoVisible = () => videoWrap.classList.contains('is-visible');
-  const attachPlayUnlock = createPlayGestureUnlock(
-    video,
-    videoState,
-    isVideoVisible,
-    playbackDebug,
-  );
+  playbackDebug.bindMotionImage(motionImg);
 
   const syncLayout = () => {
     pin.style.height = `${TV_SHOWCASE_PIN_VIEWPORT * window.innerHeight}px`;
   };
 
+  const refreshScroll = () => {
+    syncLayout();
+    refreshPinScrollTriggers();
+    handleProgress(pinScrollTrigger?.progress ?? 0);
+  };
+
   const applyFinalFrame = () => {
-    prefetchVideo();
-    videoActivated = applyTvShowcaseFrame(
+    prefetchMotion();
+    motionActivated = applyTvShowcaseFrame(
       stage,
       media,
       img1,
       img2,
-      videoWrap,
-      video,
+      motionWrap,
+      motionImg,
       1,
-      prefetchVideo,
-      videoActivated,
-      videoState,
-      playbackDebug,
-      attachPlayUnlock,
+      prefetchMotion,
+      motionActivated,
+      motionPlayback,
     );
   };
 
@@ -428,26 +268,18 @@ export function initTvShowcase() {
       return;
     }
 
-    videoActivated = applyTvShowcaseFrame(
+    motionActivated = applyTvShowcaseFrame(
       stage,
       media,
       img1,
       img2,
-      videoWrap,
-      video,
+      motionWrap,
+      motionImg,
       progress,
-      prefetchVideo,
-      videoActivated,
-      videoState,
-      playbackDebug,
-      attachPlayUnlock,
+      prefetchMotion,
+      motionActivated,
+      motionPlayback,
     );
-  };
-
-  const refreshScroll = () => {
-    syncLayout();
-    refreshPinScrollTriggers();
-    handleProgress(pinScrollTrigger?.progress ?? 0);
   };
 
   const onResize = () => {
@@ -473,15 +305,12 @@ export function initTvShowcase() {
     }
   };
 
-  video.addEventListener('ended', () => parkVideoOnLastFrame(video, videoState));
-
   const onMediaReady = () => refreshScroll();
 
   img1.addEventListener('load', onMediaReady, { once: true });
   img2.addEventListener('load', onMediaReady, { once: true });
-  video.addEventListener('loadeddata', onMediaReady, { once: true });
-  video.addEventListener('canplay', onMediaReady);
+  motionImg.addEventListener('load', onMediaReady);
 
-  prefetchVideo();
+  prefetchMotion();
   attachScroll();
 }
