@@ -1,5 +1,27 @@
 @use '../mixins' as *;
 
+// Метка ошибки воспроизведения видео (см. tv-showcase-playback-debug.js)
+.tv-showcase-playback-error {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 100000;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e53935;
+  box-shadow: 0 0 0 2px rgb(0 0 0 / 45%);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+
+  &.is-visible {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
 .tv-showcase {
   position: relative;
   z-index: 2;
