@@ -1,5 +1,7 @@
 import { clamp } from './math.js';
 
+const SNAP_THRESHOLD = 0.045;
+
 /**
  * @param {number} value
  * @param {number[]} targets
@@ -19,24 +21,16 @@ export function getTvShowcaseSnapTarget(progress, progressMap) {
   const { crossfadeStart, crossfadeEnd, revealStart, revealEnd, videoStart, videoEnd } =
     progressMap;
 
-  if (p > crossfadeStart && p < crossfadeEnd) {
-    return nearest(p, [crossfadeStart, crossfadeEnd]);
-  }
-
-  if (p > crossfadeEnd && p < revealStart) {
-    return nearest(p, [crossfadeEnd, revealStart]);
-  }
-
-  if (p > revealStart && p < revealEnd) {
-    return nearest(p, [revealStart, revealEnd]);
-  }
-
-  if (p > revealEnd && p < videoStart) {
-    return nearest(p, [revealEnd, videoStart]);
-  }
-
-  if (p > videoStart && p < videoEnd) {
-    return nearest(p, [videoStart, videoEnd]);
+  if (p > crossfadeStart && p < videoEnd) {
+    const snapPoint = nearest(p, [
+      crossfadeStart,
+      crossfadeEnd,
+      revealStart,
+      revealEnd,
+      videoStart,
+      videoEnd,
+    ]);
+    return Math.abs(p - snapPoint) <= SNAP_THRESHOLD ? snapPoint : p;
   }
 
   return p;
