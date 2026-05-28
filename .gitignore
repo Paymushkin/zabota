@@ -37,3 +37,6 @@ Thumbs.db
 # Env
 .env
 .env.*
+
+/example.html
+/example_files

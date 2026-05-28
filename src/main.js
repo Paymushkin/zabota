@@ -4,6 +4,7 @@ import { initFaq } from './modules/faq.js';
 import { initHeroGlitch } from './modules/hero-glitch.js';
 import { initTypography } from './modules/typography.js';
 import { initWhenNear } from './utils/defer-init.js';
+import { initSmoothScroll } from './utils/smooth-scroll.js';
 import { initViewportMode } from './utils/viewport.js';
 
 function scheduleMetrika() {
@@ -26,6 +27,7 @@ function initBelowFoldSections() {
 
 function init() {
   initViewportMode();
+  initSmoothScroll();
   initLinks();
   initFaq();
   initTypography();

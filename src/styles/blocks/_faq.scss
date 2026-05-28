@@ -168,13 +168,11 @@ $faq-accent: #ff7f24;
 
   .faq__title {
     font-size: clamp(38px, 5.2vw, 52px);
-    line-height: 90%;
     letter-spacing: -0.36px;
   }
 
   .faq__question {
     font-size: clamp(22px, 3.2vw, 32px);
-    line-height: 90%;
   }
 
   .faq__answer-inner {
@@ -184,16 +182,13 @@ $faq-accent: #ff7f24;
 
 @include bp-mobile {
   .faq__card {
-    padding: 120px 16px 90px;
+    padding: 60px 16px 90px;
     background: transparent;
   }
 
   .faq__title {
     margin-bottom: 48px;
     font-size: 36px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: 90%;
     letter-spacing: -0.36px;
   }
 
@@ -201,9 +196,6 @@ $faq-accent: #ff7f24;
     gap: 16px;
     padding: 24px 0 0;
     font-size: 20px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: 90%;
   }
 
   .faq__item_open .faq__question {
@@ -226,7 +218,7 @@ $faq-accent: #ff7f24;
 
   .faq__more {
     width: 100%;
-    max-width: 360px;
-    font-size: 24px;
+    max-width: 250px;
+    font-size: 20px;
   }
 }

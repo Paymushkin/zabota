@@ -79,13 +79,19 @@ export function initHeroGlitch() {
   const getBallOpacity = (progress) => {
     const { transfer23End } = HERO_PROGRESS;
     const p = clamp(progress, 0, 1);
-    const fadeInEnd = transfer23End + HERO_BALL_FADE_IN;
+    // Замедляем появление мяча и делаем кривую заметно нелинейной.
+    const BALL_FADE_SLOWDOWN = 1.45;
+    const fadeDuration = HERO_BALL_FADE_IN * BALL_FADE_SLOWDOWN;
+    const fadeInEnd = transfer23End + fadeDuration;
 
     if (p < transfer23End) {
       return 0;
     }
     if (p < fadeInEnd) {
-      return easeInOut((p - transfer23End) / HERO_BALL_FADE_IN);
+      const t = clamp((p - transfer23End) / fadeDuration, 0, 1);
+      // Медленный старт, затем более заметный набор opacity.
+      const accelerated = t ** 1.8;
+      return easeInOut(accelerated);
     }
     return 1;
   };
@@ -138,9 +144,13 @@ export function initHeroGlitch() {
   const applyTextOpacity = (p) => {
     const opacities = getHeroTextOpacities(p, introOpacity, textOpacityConfig);
     const shifts = getHeroTextSceneShifts(p, textOpacityConfig);
-    // Максимальное смещение по Y (больше — эффект "уходит вверх / появляется снизу").
-    const yMax = Math.round(clamp(window.innerHeight * 0.16, 60, 240));
-    const SMOOTH = 0.22; // 0..1: чем больше — тем меньше "запаздывание"
+    const viewportHeight = window.innerHeight;
+    // Для входящих сцен берём смещение почти до нижней границы viewport,
+    // чтобы заголовок "выезжал" именно из нижнего края экрана.
+    const ENTER_EXTRA_PX = 16;
+    // Для исходящих сцен делаем более короткий ход вверх, чтобы выход был мягким.
+    const yOutMax = Math.round(clamp(viewportHeight * 0.22, 72, 280));
+    const SMOOTH = 0.16; // 0..1: меньше => мягче и плавнее инерция
 
     scenes.forEach((scene) => {
       const id = scene.dataset.heroScene;
@@ -151,7 +161,16 @@ export function initHeroGlitch() {
         sceneShiftYState.delete(`scene${id}`);
       } else {
         const shift = shifts[`scene${id}`] ?? 0;
-        const targetY = shift * yMax;
+        const shiftSign = Math.sign(shift);
+        const shiftMagnitude = Math.abs(shift);
+        // Добавляем мягкий non-linear профиль:
+        // старт медленнее, середина плавнее, без резкого "рывка" в начале.
+        const easedShift = shiftSign * easeInOut(shiftMagnitude);
+        const rect = scene.getBoundingClientRect();
+        const yInMax = Math.round(
+          clamp(viewportHeight - rect.top + ENTER_EXTRA_PX, 180, viewportHeight * 0.98),
+        );
+        const targetY = easedShift >= 0 ? easedShift * yInMax : easedShift * yOutMax;
         const prev = sceneShiftYState.get(`scene${id}`) ?? 0;
         const next = prev + (targetY - prev) * SMOOTH;
         sceneShiftYState.set(`scene${id}`, next);

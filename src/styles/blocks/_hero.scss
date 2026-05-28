@@ -74,8 +74,8 @@
 
 .hero__ball__img {
   display: block;
-  width: min(312px, 100%);
-  max-width: 312px;
+  width: 310px;
+  max-width: 60vw;
   height: auto;
   transform: translate3d(0, 32%, 0) scale(0.85);
   transform-origin: center bottom;

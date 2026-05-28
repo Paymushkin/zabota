@@ -89,6 +89,14 @@
 }
 
 @include bp-mobile {
+  .documents {
+    display: none;
+  }
+
+  .documents + .faq {
+    margin-top: 0;
+  }
+
   .documents__title {
     font-size: 28px;
     letter-spacing: -0.28px;
