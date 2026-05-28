@@ -71,3 +71,12 @@ export function initSmoothScroll() {
     smoothScrollInstance = null;
   };
 }
+
+export function refreshSmoothScrollLayout() {
+  if (!smoothScrollInstance) {
+    return;
+  }
+
+  smoothScrollInstance.resize();
+  ScrollTrigger.refresh();
+}

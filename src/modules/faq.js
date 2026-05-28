@@ -1,5 +1,6 @@
 import { FAQ_ITEMS, FAQ_VISIBLE_COUNT } from '../data/faq.js';
 import { renderFaqListHtml } from '../render/faq.js';
+import { refreshSmoothScrollLayout } from '../utils/smooth-scroll.js';
 
 const FAQ_MORE_LABEL_EXPAND = 'Показать ещё';
 const FAQ_MORE_LABEL_COLLAPSE = 'Свернуть';
@@ -46,9 +47,37 @@ function renderFaq() {
 function bindFaqEvents() {
   const items = document.querySelectorAll('[data-faq-item]');
   const moreBtn = document.getElementById('faq-more');
+  const card = document.querySelector('.faq__card');
+  let refreshRafId = 0;
+
+  const scheduleScrollRefresh = () => {
+    if (refreshRafId) {
+      cancelAnimationFrame(refreshRafId);
+    }
+
+    // Ждём применения классов/transition, затем пересчитываем лимиты Lenis и pin/end.
+    refreshRafId = requestAnimationFrame(() => {
+      refreshRafId = 0;
+      refreshSmoothScrollLayout();
+    });
+  };
+
+  if (card && 'ResizeObserver' in window) {
+    const observer = new ResizeObserver(() => {
+      scheduleScrollRefresh();
+    });
+    observer.observe(card);
+  }
 
   items.forEach((item) => {
     const button = item.querySelector('.faq__question');
+    const answer = item.querySelector('.faq__answer');
+
+    answer.addEventListener('transitionend', (event) => {
+      if (event.propertyName === 'grid-template-rows') {
+        scheduleScrollRefresh();
+      }
+    });
 
     button.addEventListener('click', () => {
       const isOpen = item.classList.contains('faq__item_open');
@@ -58,6 +87,8 @@ function bindFaqEvents() {
       });
 
       setFaqItemOpen(item, !isOpen);
+      // Fallback на случай, если ResizeObserver недоступен/задержался.
+      scheduleScrollRefresh();
     });
   });
 
@@ -68,6 +99,8 @@ function bindFaqEvents() {
 
       setFaqListExpanded(nextExpanded);
       setFaqMoreExpanded(moreBtn, nextExpanded);
+      // Fallback на случай, если ResizeObserver недоступен/задержался.
+      scheduleScrollRefresh();
     });
   }
 }
