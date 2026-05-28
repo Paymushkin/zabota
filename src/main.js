@@ -1,10 +1,10 @@
 import './styles/main.scss';
 import { initLinks } from './modules/links.js';
 import { initFaq } from './modules/faq.js';
-import { initHero } from './modules/hero.js';
+import { initHeroGlitch } from './modules/hero-glitch.js';
 import { initTypography } from './modules/typography.js';
 import { initWhenNear } from './utils/defer-init.js';
-import { initViewportMode, isDesktopViewport } from './utils/viewport.js';
+import { initViewportMode } from './utils/viewport.js';
 
 function scheduleMetrika() {
   import('./metrika.js').then(({ initMetrika }) => initMetrika());
@@ -30,11 +30,7 @@ function init() {
   initFaq();
   initTypography();
 
-  if (!isDesktopViewport()) {
-    return;
-  }
-
-  initHero();
+  initHeroGlitch();
   initBelowFoldSections();
   scheduleMetrika();
 }

@@ -30,8 +30,6 @@ const PUBLIC_VARIANTS = {
   'tv-2.png': { width: 1358, quality: 85 },
 };
 
-const HERO_WEBP = { quality: 82, effort: 4 };
-
 async function pathExists(filePath) {
   try {
     await access(filePath);
@@ -168,32 +166,6 @@ async function optimizeHeroStatic() {
   }
 }
 
-async function optimizeHeroFrames() {
-  const sequences = await readdir(HERO_DIR, { withFileTypes: true });
-  let converted = 0;
-
-  for (const entry of sequences) {
-    if (!entry.isDirectory()) continue;
-
-    const dir = join(HERO_DIR, entry.name);
-    const frames = (await readdir(dir)).filter((f) => f.endsWith('.jpg'));
-
-    for (const file of frames) {
-      const input = join(dir, file);
-      const output = join(dir, file.replace(/\.jpg$/i, '.webp'));
-      await sharp(input).webp(HERO_WEBP).toFile(output);
-      await unlink(input);
-      converted += 1;
-    }
-
-    if (frames.length > 0) {
-      console.log(`  ${entry.name}: ${frames.length} frames`);
-    }
-  }
-
-  console.log(`Hero: ${converted} frames → webp`);
-}
-
 async function optimize() {
   await copyFonts();
   console.log('Favicon:');
@@ -202,8 +174,6 @@ async function optimize() {
   await optimizeStatic();
   console.log('Hero static:');
   await optimizeHeroStatic();
-  console.log('Hero sequences:');
-  await optimizeHeroFrames();
   console.log('Done.');
 }
 

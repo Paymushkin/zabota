@@ -14,6 +14,7 @@ import {
 import { isPinPast } from '../utils/scroll-pin.js';
 import { getTvShowcaseSnapTarget } from '../utils/tv-showcase-snap.js';
 import { createTvShowcasePlaybackDebug } from '../utils/tv-showcase-playback-debug.js';
+import { getStableViewportHeight } from '../utils/viewport.js';
 
 const PEEK_VISIBLE_RATIO = 0.5;
 const VIDEO_DEACTIVATE_EPS = 0.03;
@@ -237,7 +238,7 @@ export function initTvShowcase() {
   playbackDebug.bindMotionImage(motionImg);
 
   const syncLayout = () => {
-    pin.style.height = `${TV_SHOWCASE_PIN_VIEWPORT * window.innerHeight}px`;
+    pin.style.height = `${TV_SHOWCASE_PIN_VIEWPORT * getStableViewportHeight()}px`;
   };
 
   const refreshScroll = () => {

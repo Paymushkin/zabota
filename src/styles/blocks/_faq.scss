@@ -1,6 +1,8 @@
 @use '../interactive' as *;
 @use '../mixins' as *;
 
+$faq-accent: #ff7f24;
+
 .faq {
   padding-bottom: 0;
   color: #fff;
@@ -19,6 +21,7 @@
   margin-bottom: 80px;
   text-align: center;
   color: #fff;
+  line-height: 90%;
 }
 
 .faq__list {
@@ -29,17 +32,6 @@
 
 .faq__item {
   border-bottom: 1px solid rgb(255 255 255 / 20%);
-  transition: background-color var(--duration-interactive) var(--ease-interactive);
-}
-
-@include hover-only {
-  .faq__item:has(.faq__question:hover) {
-    background-color: rgb(255 255 255 / 6%);
-
-    .faq__icon {
-      color: #fff;
-    }
-  }
 }
 
 .faq__item_hidden {
@@ -56,14 +48,19 @@
   text-align: left;
   font-family: var(--font-heading);
   font-size: 32px;
+  font-style: normal;
   font-weight: 500;
-  line-height: 1.2;
+  line-height: 90%;
   color: #fff;
   transition: color var(--duration-interactive) var(--ease-interactive);
 
   @include hover-only {
     &:hover {
-      color: #fff;
+      color: $faq-accent;
+
+      .faq__icon {
+        color: $faq-accent;
+      }
     }
   }
 
@@ -147,7 +144,7 @@
 }
 
 .faq__more.btn-pill_accent {
-  background: #ff7f24;
+  background: $faq-accent;
   color: #fff;
 
   @media (hover: hover) {
@@ -164,35 +161,49 @@
 
 @include bp-tablet {
   .faq__card {
-    padding-block: 64px;
-    padding-inline: 0;
+    padding-block: 84px;
+    padding-inline: 24px;
+    background: transparent;
   }
 
   .faq__title {
-    font-size: clamp(32px, 4.5vw, var(--font-size-section-title));
+    font-size: clamp(38px, 5.2vw, 52px);
+    line-height: 90%;
+    letter-spacing: -0.36px;
   }
 
   .faq__question {
-    font-size: clamp(24px, 3vw, 32px);
+    font-size: clamp(22px, 3.2vw, 32px);
+    line-height: 90%;
+  }
+
+  .faq__answer-inner {
+    font-size: clamp(18px, 2.2vw, 24px);
   }
 }
 
 @include bp-mobile {
   .faq__card {
-    padding-block: 40px;
-    padding-inline: 0;
+    padding: 120px 16px 90px;
+    background: transparent;
   }
 
   .faq__title {
-    margin-bottom: 32px;
-    font-size: 28px;
-    letter-spacing: -0.28px;
+    margin-bottom: 48px;
+    font-size: 36px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 90%;
+    letter-spacing: -0.36px;
   }
 
   .faq__question {
     gap: 16px;
     padding: 24px 0 0;
-    font-size: 22px;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 90%;
   }
 
   .faq__item_open .faq__question {
@@ -209,8 +220,8 @@
   }
 
   .faq__answer-inner {
-    font-size: 18px;
-    letter-spacing: 0.36px;
+    font-size: clamp(16px, 3.6vw, 18px);
+    letter-spacing: 0.32px;
   }
 
   .faq__more {

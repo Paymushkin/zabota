@@ -1,8 +1,10 @@
 html {
   /* auto: GSAP ScrollTrigger snap в hero конфликтует с smooth */
   scroll-behavior: auto;
+  overflow-x: hidden; /* fallback для Safari, где clip может не сработать */
   overflow-x: clip;
   scrollbar-gutter: stable;
+  max-height: 100svh;
 }
 
 @media (prefers-reduced-motion: reduce) {

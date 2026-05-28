@@ -1,6 +1,6 @@
 @use '../mixins' as *;
 
-/* test2: полосы и затемнение фото плавно меняются по скроллу (--glitch-heal 0→1) */
+/* Полосы и затемнение фото плавно меняются по скроллу (--glitch-heal 0→1) */
 
 .hero--glitch {
   --glitch-stripe-opacity: 0.88;
@@ -123,6 +123,41 @@
 
     .hero__dim {
       background: rgb(0 0 0 / calc(10% + var(--photo-dim, 0) * 35%));
+    }
+  }
+}
+
+@include bp-tablet {
+  .hero--glitch {
+    .hero-glitch__bg {
+      left: 0;
+      width: 100%;
+    }
+  }
+}
+
+@include bp-mobile {
+  .hero--glitch {
+    .hero-glitch__stripes {
+      /* Мягко гасим полосы у краёв экрана на iOS (панель браузера). */
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        #000 14%,
+        #000 86%,
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        transparent 0%,
+        #000 14%,
+        #000 86%,
+        transparent 100%
+      );
+    }
+
+    .hero-glitch__scan--bottom {
+      display: none;
     }
   }
 }

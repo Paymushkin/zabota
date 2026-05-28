@@ -35,15 +35,18 @@
             </div>
             <div class="hero__overlay">
               <header class="hero__header">
-                <img
-                  class="hero__logo"
-                  src="/img/logo.svg"
-                  width="369"
-                  height="35"
-                  alt="Яндекс Маркет и Забота"
-                  decoding="async"
-                  fetchpriority="low"
-                />
+                <picture class="hero__logo-wrap">
+                  <source media="(max-width: 768px)" srcset="/logo-mobile.svg" />
+                  <img
+                    class="hero__logo"
+                    src="/img/logo.svg"
+                    width="369"
+                    height="35"
+                    alt="Яндекс Маркет и Забота"
+                    decoding="async"
+                    fetchpriority="low"
+                  />
+                </picture>
               </header>
               <div class="hero__scenes">
                 <div class="hero__scene hero__scene--1" data-hero-scene="1">

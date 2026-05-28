@@ -150,6 +150,10 @@
 }
 
 @include bp-tablet {
+  .tv-showcase {
+    display: none;
+  }
+
   .tv-showcase__title {
     font-size: clamp(32px, 4.5vw, 46px);
     letter-spacing: -0.32px;

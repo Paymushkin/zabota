@@ -80,7 +80,7 @@
   font-size: 30px;
   font-weight: 500;
   line-height: 1.2;
-  color: #ff0115;
+  color: #ff4c1f;
 }
 
 .scroll-steps__card-title {
@@ -157,5 +157,11 @@
     transform: none !important;
     opacity: 1 !important;
     visibility: visible !important;
+  }
+}
+
+@include bp-mobile {
+  .scroll-steps {
+    display: none;
   }
 }

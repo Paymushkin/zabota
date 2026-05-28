@@ -7,6 +7,7 @@ import {
 } from '../utils/pin-scroll-trigger.js';
 import { isPinPast } from '../utils/scroll-pin.js';
 import { getScrollStepsSnapTarget } from '../utils/scroll-steps-snap.js';
+import { getStableViewportHeight } from '../utils/viewport.js';
 
 const STEP_COUNT = 3;
 const TRANSITION_COUNT = STEP_COUNT - 1;
@@ -155,8 +156,8 @@ export function initScrollSteps() {
     }
     deck.style.minHeight = `${card.offsetHeight + STACK_PEEK_MAX}px`;
 
-    const scrollTrack = TRANSITION_COUNT * window.innerHeight * SCROLL_PER_STEP_VH;
-    const viewportHeight = window.innerHeight;
+    const viewportHeight = getStableViewportHeight();
+    const scrollTrack = TRANSITION_COUNT * viewportHeight * SCROLL_PER_STEP_VH;
     const pinHeight = desktopMq.matches
       ? viewportHeight + scrollTrack
       : deck.offsetHeight + scrollTrack;

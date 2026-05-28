@@ -25,6 +25,7 @@ import {
   shouldHeroBallOverlap,
 } from '../utils/hero-ball-overlap.js';
 import { isPinPast } from '../utils/scroll-pin.js';
+import { getStableViewportHeight } from '../utils/viewport.js';
 
 export function initHeroGlitch() {
   const section = document.querySelector('[data-hero-glitch]');
@@ -112,8 +113,7 @@ export function initHeroGlitch() {
     });
   };
 
-  const applyGlitchVisuals = () => {
-    const p = scrollProgress;
+  const applyGlitchVisuals = (p) => {
     const { transfer23End } = HERO_PROGRESS;
 
     const healT = easeInOut(clamp(p / transfer23End, 0, 1));
@@ -135,9 +135,9 @@ export function initHeroGlitch() {
     applyStripeHeal(healT);
   };
 
-  const applyTextOpacity = () => {
-    const opacities = getHeroTextOpacities(scrollProgress, introOpacity, textOpacityConfig);
-    const shifts = getHeroTextSceneShifts(scrollProgress, textOpacityConfig);
+  const applyTextOpacity = (p) => {
+    const opacities = getHeroTextOpacities(p, introOpacity, textOpacityConfig);
+    const shifts = getHeroTextSceneShifts(p, textOpacityConfig);
     // Максимальное смещение по Y (больше — эффект "уходит вверх / появляется снизу").
     const yMax = Math.round(clamp(window.innerHeight * 0.16, 60, 240));
     const SMOOTH = 0.22; // 0..1: чем больше — тем меньше "запаздывание"
@@ -162,7 +162,7 @@ export function initHeroGlitch() {
     });
 
     if (phase3Ball) {
-      const opacity = getBallOpacity(scrollProgress);
+      const opacity = getBallOpacity(p);
       const ballVisible = opacity > 0.02;
       phase3Ball.style.opacity = String(opacity);
       phase3Ball.classList.toggle('is-active', ballVisible);
@@ -184,12 +184,13 @@ export function initHeroGlitch() {
   };
 
   const render = () => {
-    applyGlitchVisuals();
-    applyTextOpacity();
+    const p = scrollProgress;
+    applyGlitchVisuals(p);
+    applyTextOpacity(p);
   };
 
   const syncPinHeight = () => {
-    pin.style.height = `${window.innerHeight * HERO_PIN_VIEWPORT}px`;
+    pin.style.height = `${getStableViewportHeight() * HERO_PIN_VIEWPORT}px`;
   };
 
   const mountScrollTrigger = () => {
@@ -227,11 +228,11 @@ export function initHeroGlitch() {
 
     stopIntroText();
     introOpacity = 0;
-    applyTextOpacity();
+    applyTextOpacity(scrollProgress);
 
     if (reducedMotion.matches) {
       introOpacity = 1;
-      applyTextOpacity();
+      applyTextOpacity(scrollProgress);
       return;
     }
 
@@ -241,7 +242,7 @@ export function initHeroGlitch() {
 
       const animateIntro = (now) => {
         introOpacity = easeInOut(clamp((now - start) / HERO_INTRO_TEXT_FADE_MS, 0, 1));
-        applyTextOpacity();
+        applyTextOpacity(scrollProgress);
         if (now - start < HERO_INTRO_TEXT_FADE_MS) {
           introRafId = requestAnimationFrame(animateIntro);
         }
@@ -260,7 +261,7 @@ export function initHeroGlitch() {
     syncPinHeight();
     mountScrollTrigger();
     section.toggleAttribute('data-glitch-active', true);
-    applyTextOpacity();
+    applyTextOpacity(scrollProgress);
     scheduleHeroBallLayoutStabilization(refreshScroll);
     startIntroText();
     stripeBlink?.start();
@@ -302,7 +303,7 @@ export function initHeroGlitch() {
       startIntroText();
     } else {
       introOpacity = 1;
-      applyTextOpacity();
+      applyTextOpacity(scrollProgress);
     }
     render();
   };

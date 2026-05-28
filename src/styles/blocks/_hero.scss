@@ -20,21 +20,6 @@
   background: #000;
 }
 
-.hero__canvas {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(50% - 50vw);
-  left: calc(50% - 50svw);
-  z-index: 0;
-  display: block;
-  width: 100vw;
-  width: 100svw;
-  height: 100%;
-  max-width: none;
-  object-fit: cover;
-}
-
 .hero__dim {
   position: absolute;
   inset: 0;
@@ -120,6 +105,11 @@
   object-fit: contain;
 }
 
+.hero__logo-wrap {
+  display: inline-block;
+  line-height: 0;
+}
+
 .hero__scenes {
   position: relative;
   z-index: 1;
@@ -154,11 +144,11 @@
   color: #fff;
   text-align: center;
   font-family: var(--font-heading);
-  font-size: 100px;
+  font-size: clamp(48px, 7.2vw, 100px);
   font-style: normal;
   font-weight: 500;
   line-height: 90%;
-  letter-spacing: -1px;
+  letter-spacing: clamp(-1px, -0.09vw, -0.48px);
   text-wrap: balance;
 }
 
@@ -168,20 +158,38 @@
 
 .hero__scene3__lead {
   margin: 28px 0 0;
-  text-align: center;
-  text-wrap: balance;
-  @include text-lead-light;
   color: #fff;
+  text-align: center;
+  font-family: var(--font-text);
+  font-size: clamp(20px, 2.2vw, 30px);
+  font-style: normal;
+  font-weight: 400;
+  line-height: 105%;
+  letter-spacing: clamp(0.4px, 0.06vw, 0.6px);
+  text-wrap: balance;
 }
 
 @include bp-mobile {
+  .hero__overlay {
+    padding-top: 40px;
+  }
+
+  .hero__header {
+    top: 40px;
+  }
+
+  .hero__logo {
+    height: auto;
+    width: min(222px, 100%);
+  }
+
   .hero__title {
-    font-size: clamp(36px, 10vw, 100px);
-    letter-spacing: -0.5px;
+    font-size: 48px;
+    letter-spacing: -0.48px;
   }
 
   .hero__scene3__lead {
-    font-size: clamp(16px, 4.2vw, 30px);
+    font-size: 20px;
     letter-spacing: 0.4px;
   }
 }
