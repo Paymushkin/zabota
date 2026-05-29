@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "optimize-images": "node scripts/optimize-images.mjs",
+    "optimize-video": "node scripts/optimize-video.mjs",
     "prerender": "node scripts/prerender-sections.mjs",
     "dev": "vite --open",
     "dev:fresh": "npm run optimize-images && npm run prerender && vite --open",
