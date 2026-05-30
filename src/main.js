@@ -2,6 +2,7 @@ import './styles/main.scss';
 import { initLinks } from './modules/links.js';
 import { initFaq } from './modules/faq.js';
 import { initHeroGlitch } from './modules/hero-glitch.js';
+import { initSteps } from './modules/steps.js';
 import { initTypography } from './modules/typography.js';
 import { initWhenNear } from './utils/defer-init.js';
 import { initSmoothScroll } from './utils/smooth-scroll.js';
@@ -20,9 +21,6 @@ function initBelowFoldSections() {
     '200% 0px',
   );
 
-  initWhenNear('.scroll-steps', () => {
-    import('./modules/scroll-steps.js').then(({ initScrollSteps }) => initScrollSteps());
-  });
 }
 
 function init() {
@@ -33,6 +31,7 @@ function init() {
   initTypography();
 
   initHeroGlitch();
+  initSteps();
   initBelowFoldSections();
   scheduleMetrika();
 }

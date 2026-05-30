@@ -1,4 +1,4 @@
-import { access, copyFile, mkdir, readdir, stat, unlink } from 'node:fs/promises';
+import { access, copyFile, mkdir, readdir, rename, stat, unlink } from 'node:fs/promises';
 import { join, parse } from 'node:path';
 import sharp from 'sharp';
 
@@ -11,9 +11,9 @@ const HERO_DIR = join(ROOT, 'public', 'hero');
 
 /** PNG из img/ → public/img/*.webp */
 const SRC_VARIANTS = {
-  'step-1.png': { width: 1160, quality: 88 },
-  'step-2.png': { width: 1160, quality: 88 },
-  'step-3.png': { width: 1160, quality: 88 },
+  'step-1.png': { width: 1048, quality: 88 },
+  'step-2.png': { width: 1048, quality: 88 },
+  'step-3.png': { width: 1048, quality: 88 },
 };
 
 /** PNG из img/ → public/hero/*.webp */
@@ -122,8 +122,28 @@ async function convertPublicPng(file, opts) {
   console.log(`  ${name}.webp (from public)`);
 }
 
+async function ingestRootStepPngs() {
+  await mkdir(SRC_DIR, { recursive: true });
+
+  for (const file of Object.keys(SRC_VARIANTS)) {
+    const rootPath = join(ROOT, file);
+    if (!(await pathExists(rootPath))) {
+      continue;
+    }
+
+    const destPath = join(SRC_DIR, file);
+    if (await pathExists(destPath)) {
+      await unlink(destPath);
+    }
+
+    await rename(rootPath, destPath);
+    console.log(`  ${file} → img/`);
+  }
+}
+
 async function optimizeStatic() {
   await mkdir(OUT_DIR, { recursive: true });
+  await ingestRootStepPngs();
 
   if (await pathExists(SRC_DIR)) {
     const logoSrc = join(SRC_DIR, 'logo.svg');

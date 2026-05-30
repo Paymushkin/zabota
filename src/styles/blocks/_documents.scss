@@ -6,6 +6,10 @@
   padding-block: 0;
 }
 
+.documents .container {
+  padding-inline: 32px;
+}
+
 .documents__inner {
   display: flex;
   flex-direction: column;
@@ -31,8 +35,9 @@
 }
 
 .documents__actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: 40px;
   width: 100%;
   margin: 0;
@@ -42,40 +47,116 @@
 
 .documents__actions li {
   display: flex;
+  flex: 1;
+  justify-content: center;
   min-width: 0;
 }
 
 .documents__actions .btn-pill {
+  position: relative;
+  isolation: isolate;
   flex: 1;
   width: 100%;
+  max-width: 440px;
   min-width: 0;
   min-height: 64px;
-  padding: 20px 32px;
+  padding: 20px;
   box-sizing: border-box;
+  overflow: hidden;
   color: #fff;
   text-decoration: none;
+  border: none;
+  border-radius: 48px;
+  background-color: rgb(0 0 0 / 20%);
+  background-image:
+    url('/img/btn-bg-r.png'),
+    url('/img/btn-bg-l.png'),
+    radial-gradient(
+      216.91% 116.1% at 98.09% 77.33%,
+      rgb(255 255 255 / 20%) 0%,
+      rgb(0 0 0 / 0%) 100%
+    );
+  background-repeat: no-repeat;
+  background-position: right center, left center, center;
+  background-size: auto 100%, auto 100%, cover;
   box-shadow: none;
   transition:
-    background-position 0.45s var(--ease-interactive),
-    filter var(--duration-interactive) var(--ease-interactive),
-    transform var(--duration-interactive) var(--ease-interactive),
-    box-shadow var(--duration-interactive) var(--ease-interactive);
+    color 0.5s cubic-bezier(0.33, 1, 0.68, 1),
+    transform var(--duration-interactive) var(--ease-interactive);
 
-  &:visited,
-  &:hover,
-  &:active,
-  &:focus {
-    text-decoration: none;
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    z-index: 0;
+    border-radius: inherit;
+    background: #fff;
+    opacity: 0;
+    transition: opacity 0.5s cubic-bezier(0.33, 1, 0.68, 1);
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    padding: 1px;
+    border-radius: inherit;
+    background-color: transparent;
+    background-image: radial-gradient(
+      310.71% 107.73% at 85.38% 19.33%,
+      rgb(167 3 3 / 0%) 2.88%,
+      #a70303 54.97%,
+      #ff4c1f 100%
+    );
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    pointer-events: none;
+    transition: background-color 0.5s cubic-bezier(0.33, 1, 0.68, 1);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+  }
+
+  .btn-pill__label {
+    position: relative;
+    z-index: 2;
+  }
+
+  &:visited {
     color: #fff;
+    text-decoration: none;
+  }
+
+  @include hover-only {
+    &:hover,
+    &:focus-visible {
+      color: #000;
+
+      &::before {
+        opacity: 1;
+      }
+    }
+
+    &:visited:hover,
+    &:visited:focus-visible {
+      color: #000;
+    }
   }
 }
 
-.documents__actions li:first-child .btn-pill {
-  @include gradient-pill-hover(linear-gradient(90deg, #ff252b 0%, #fff200 50%, #ff252b 100%));
-}
-
-.documents__actions li:nth-child(2) .btn-pill {
-  @include gradient-pill-hover(linear-gradient(90deg, #fff200 0%, #ff2d8d 50%, #fff200 100%));
+@include hover-only {
+  .documents__actions .btn-pill:hover::after,
+  .documents__actions .btn-pill:focus-visible::after {
+    background-color: #fff;
+    background-image: none;
+  }
 }
 
 .documents + .faq {
@@ -83,18 +164,22 @@
 }
 
 @include bp-tablet {
+  .documents .container {
+    padding-inline: 24px;
+  }
+
   .documents__title {
     font-size: clamp(32px, 4.5vw, var(--font-size-section-title));
   }
 }
 
 @include bp-mobile {
-  .documents {
-    display: none;
+  .documents .container {
+    padding-inline: 16px;
   }
 
-  .documents + .faq {
-    margin-top: 0;
+  .documents__inner {
+    padding-top: clamp(48px, 12vw, 64px);
   }
 
   .documents__title {
@@ -103,13 +188,32 @@
   }
 
   .documents__text {
+    margin-bottom: 32px;
     font-size: 18px;
     letter-spacing: 0.36px;
   }
 
   .documents__actions {
-    grid-template-columns: 1fr;
-    gap: 24px;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .documents__actions li {
+    flex: none;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .documents__actions .btn-pill {
+    width: 100%;
+    max-width: 348px;
+    min-height: 56px;
+    padding: 16px 16px;
+    font-size: 20px;
+  }
+
+  .documents + .faq {
+    margin-top: clamp(48px, 12vw, 64px);
   }
 }
 
@@ -117,8 +221,9 @@
   .documents__actions .btn-pill {
     transition: none;
 
-    &:hover {
-      background-position: 0% 50%;
+    &::before,
+    &::after {
+      transition: none;
     }
   }
 }

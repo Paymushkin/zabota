@@ -144,6 +144,8 @@
   height: 100%;
   background: #000;
   translate: 0 -50%;
+  scale: 1.25;
+  transform-origin: left center;
   object-fit: contain;
   object-position: left center;
   filter: contrast(1.04) brightness(0.98);
